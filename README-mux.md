@@ -64,6 +64,16 @@ You will need to ensure NetworkManager is running:
 
 ## Installing ViaQ
 
+These instructions and config files are for an all-in-one, single machine, run
+ansible on the same machine you are installing ViaQ on.
+
+*NOTE* *THIS IS NOT FOR PRODUCTION USE*
+
+The setup below is for a developer or demo machine, all-in-one, running
+Ansible in *local* mode to install ViaQ on the same machine as Ansible is
+running on.  It also configures the `AllowAllPasswordIdentityProvider` which
+means anyone can log in using the OpenShift UI.
+
 Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.
 The following packages are required: openshift-ansible
 openshift-ansible-callback-plugins openshift-ansible-filter-plugins
@@ -89,7 +99,12 @@ Download the files [vars.yaml.template](vars.yaml.template) and
 [ansible-inventory-origin-15-aio](ansible-inventory-origin-15-aio)
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-15-aio > ansible-inventory-origin-15-aio
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-15-aio > ansible-inventory
+
+To use ViaQ on Red Hat OCP, use the
+[ansible-inventory-ocp-35-aio](ansible-inventory-ocp-35-aio) file:
+
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
 
 Copy `vars.yaml.template` to `vars.yaml`.  You will need to change the
 following fields in `vars.yaml`:
@@ -127,7 +142,10 @@ public IP address, but you can "fake" these out with `/etc/hosts` entries:
 Where `10.16.19.171` is the external/public IP address of the machine you created in
 [provisioning](#provisioning-a-machine-to-run-viaq), and the hostnames are
 various aliases you created to access the machine externally via Ansible,
-Kibana, and mux.
+Kibana, and mux.  That is, unless you have configured DNS or some other host
+lookup service, you will need to make similar changes to `/etc/hosts` from all
+client machines from which you will use Kibana, or access the Elasticsearch API
+directly, or from which you will send logs to the mux.
 
 Once you have your inventory and `vars.yaml`, you can run ansible:
 
@@ -135,7 +153,7 @@ Once you have your inventory and `vars.yaml`, you can run ansible:
     # (or wherever you cloned the git repo if using git)
     # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
       -e @/path/to/vars.yaml \
-      -i /path/to/ansible-inventory-origin-15-aio playbooks/byo/config.yml
+      -i /path/to/ansible-inventory playbooks/byo/config.yml
 
 Check `/tmp/ansible.log` if there are any errors during the run.  If this
 hangs, just kill it and run it again - Ansible is (mostly) idempotent.  Same
