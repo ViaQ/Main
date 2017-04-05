@@ -1,2 +1,2 @@
-# Main
-Start Here for ViaQ info - Main entry point
+# How to setup ViaQ logging
+[Setup ViaQ](README-mux.md)

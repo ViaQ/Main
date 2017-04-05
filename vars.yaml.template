@@ -1,0 +1,7 @@
+ansible_ssh_user: centos
+ansible_become: true
+openshift_master_default_subdomain: origin-15.logging.test
+openshift_public_ip: $OPENSHIFT_PUBLIC_IP
+openshift_ip: "{{ ansible_eth0.ipv4.address }}"
+openshift_public_hostname: ocp.{{ openshift_master_default_subdomain }}
+openshift_hostname: $OPENSHIFT_PRIVATE_HOSTNAME
