@@ -55,7 +55,7 @@
 			<task name="/distribution/install" role="STANDALONE"/>
             <task name="/distribution/command" role="STANDALONE">
                 <params>
-                    <param name="CMDS_TO_RUN" value="git clone ssh://git.app.eng.bos.redhat.com/git/ViaQ.git /root/ViaQ -b 3.6"/>
+                    <param name="CMDS_TO_RUN" value="git clone http://git.app.eng.bos.redhat.com/git/ViaQ.git /root/ViaQ -b 3.6"/>
                 </params>
             </task>
             <task name="/distribution/command" role="STANDALONE">
