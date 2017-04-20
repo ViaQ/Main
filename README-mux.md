@@ -1,6 +1,8 @@
-# Setting Up ViaQ Logging
+Setting Up ViaQ Logging
+=======================
 
-## Intro
+Intro
+-----
 
 ViaQ Logging is based on the [OpenShift
 Logging](https://github.com/openshift/origin-aggregated-logging) stack.  You
@@ -15,7 +17,8 @@ Forward/Enrich/Aggregate/Normalize.
 
 This document uses the term *mux* to refer to this component.
 
-## Provisioning a machine to run ViaQ
+Provisioning a machine to run ViaQ
+----------------------------------
 
 **WARNING** DO NOT INSTALL `libvirt` on the OpenShift machine!  You will run
   into all sorts of problems related to name resolution and DNS.  For example,
@@ -30,6 +33,8 @@ ssh keypair.  This means you will need to:
 * create a user account (or use root)
 * add the ssh pubkey to the user account `~/.ssh/authorized_keys`
   * or use `ssh-copy-id -i /path/to/my/id_rsa.pub ...` to copy one over
+* add the ssh hostkey for localhost to your SSH `known_hosts`
+  * `ssh-keyscan -H localhost >> ~/.ssh/known_hosts`
 * enable passwordless sudo (if not using root above) e.g. in sudoers config:
   * `centos ALL=(ALL) NOPASSWD:ALL`
 * allow connections on the following ports/protocols:
@@ -38,31 +43,22 @@ ssh keypair.  This means you will need to:
 
 This will allow you to access the machine via ssh (in order to run Ansible -
 see below), to access the external services such as Kibana and mux, and to
-access the OpenShift UI console.
+access the OpenShift UI console.  Yes, openshift-ansible in some cases will
+attempt to ssh to localhost.
 
 ViaQ on OCP requires a RHEL and OCP subscription.
 
-ViaQ on Origin requires these [Yum Repos](#appendix-1-centos7-viaq-yum-repos).
+ViaQ on Origin requires these [Yum Repos](centos7-viaq.repo).
+You will need to install the following packages: docker iptables-services
 
-You will need to install the following packages: docker iptables-services NetworkManager
+You will need to configure sudo to not require a tty.  For example, create a
+file like `/etc/sudoers.d/999-cloud-init-requiretty` with the following contents:
 
-You will need to configure sudo to not require a tty e.g. something like this:
-
-    # ls -l /etc/sudoers.d/999-cloud-init-requiretty
-    -r--r-----. 1 root root 21 Dec  1 13:17    /etc/sudoers.d/999-cloud-init-requiretty
     # cat /etc/sudoers.d/999-cloud-init-requiretty
     Defaults !requiretty
 
-You may need to disable SELinux `sudo setenforce Permissive` or edit
-`/etc/selinux/config` and use `SELINUX=permissive`
-
-You will need to ensure NetworkManager is running:
-
-    # systemctl daemon-reload
-    # systemctl enable NetworkManager
-    # systemctl start NetworkManager
-
-## Installing ViaQ
+Installing ViaQ
+---------------
 
 These instructions and config files are for an all-in-one, single machine, run
 ansible on the same machine you are installing ViaQ on.
@@ -106,6 +102,10 @@ To use ViaQ on Red Hat OCP, use the
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
 
+It doesn't matter where you save these files, but you will need to know the
+full path and filename for the `ansible-inventory` and `vars.yaml` files for
+the `ansible-playbook` command below.
+
 Copy `vars.yaml.template` to `vars.yaml`.  You will need to change the
 following fields in `vars.yaml`:
 
@@ -116,36 +116,51 @@ following fields in `vars.yaml`:
   use `yes`
 * `openshift_master_default_subdomain` - this is the public subdomain to use
   for all of the external facing logging services, such as the OpenShift UI,
-  Kibana, mux, and Elasticsearch.  By default, the OpenShift UI will be
-  accessed via `https://openshift.{{ openshift_master_default_subdomain }}:8443`,
-  Kibana will be at `https://kibana.{{ openshift_master_default_subdomain }}`,
+  Kibana, mux, and Elasticsearch.  By default, the public hostname will be
+  used, and the OpenShift UI will be accessed via `https://{{
+  openshift_master_default_subdomain }}:8443`, Kibana will be at
+  `https://kibana.{{ openshift_master_default_subdomain }}`,
   etc.
+* `openshift_public_hostname` - set this if you want to use a different value
+  than `openshift_master_default_subdomain`
 * `openshift_public_ip` - this is the public IP address, the IP address used in
   your internal DNS or host look up for browsers and other external client
-  programs.  For example, in OpenStack, this will be the *floating ip* address
-  of the machine.  This may be the same as the `eth0` IP addrss of the machine,
-  in which case, just use `"{{ ansible_eth0.ipv4.address }}"` as the value as
+  programs.  For example, in OpenStack, this will be the **floating ip** address
+  of the machine.  This may be the same as the `eth0` IP address of the machine,
+  in which case, just use `"{{ ansible_eth0.ipv4.address }}"` as the value, as
   is done for `openshift_ip`
 * `openshift_hostname` - this is the private hostname of the machine that will
   be used inside the cluster.  For example, OpenStack machines will have a
   "private" hostname assigned by Neutron networking.  This may be the same as
   the external hostname if you do not have a "private" hostname - in that case,
-  just use `openshift.{{ openshift_master_default_subdomain }}`
+  just use `{{ openshift_public_hostname }}`
+* `openshift_hosted_logging_master_public_url` - this is the public URL for
+  OpenShift UI access - you can usually use the default value
+* `openshift_hosted_logging_hostname` - this is the public hostname for Kibana
+  browser access - you can usually use the default value
 
 You can also override variables in the inventory by setting them in `vars.yaml`.
+
+### Note about hostnames and IP addresses in this document ###
+
+**NOTE**: In the sections that follow, the text that refers to specifc
+  hostnames and IP addresses should be changed to the values you set in your
+  `vars.yaml` file.
+* `10.16.19.171` - replace this with your `openshift_public_ip`
+* `192.168.122.4` - replace this with your `openshift_ip`
+* `openshift.logging.test` - replace this with your `openshift_public_hostname`
+* `kibana.logging.test` - replace this with `openshift_hosted_logging_hostname`
+* `mux.logging.test` - replace this with mux.`openshift_master_default_subdomain`
 
 The public hostname would typically be a DNS entry for the
 public IP address, but you can "fake" these out with `/etc/hosts` entries:
 
     10.16.19.171 openshift.logging.test kibana.logging.test mux.logging.test
 
-Where `10.16.19.171` is the external/public IP address of the machine you created in
-[provisioning](#provisioning-a-machine-to-run-viaq), and the hostnames are
-various aliases you created to access the machine externally via Ansible,
-Kibana, and mux.  That is, unless you have configured DNS or some other host
-lookup service, you will need to make similar changes to `/etc/hosts` from all
-client machines from which you will use Kibana, or access the Elasticsearch API
-directly, or from which you will send logs to the mux.
+That is, unless you have configured DNS or some other host lookup service, you
+will need to make similar changes to `/etc/hosts` from all client machines from
+which you will use Kibana, or access the Elasticsearch API directly, or from
+which you will send logs to the mux.
 
 Once you have your inventory and `vars.yaml`, you can run ansible:
 
@@ -154,6 +169,10 @@ Once you have your inventory and `vars.yaml`, you can run ansible:
     # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
       -e @/path/to/vars.yaml \
       -i /path/to/ansible-inventory playbooks/byo/config.yml
+
+where `/path/to/vars.yaml` is the full path and file name where you saved your
+`vars.yaml` file, and `/path/to/ansible-inventory` is the full path and file
+name where you saved your `ansible-inventory` file.
 
 Check `/tmp/ansible.log` if there are any errors during the run.  If this
 hangs, just kill it and run it again - Ansible is (mostly) idempotent.  Same
@@ -167,11 +186,13 @@ To confirm that OpenShift and logging are working:
 
 You should see the Elasticsearch, Curator, Kibana, and Fluentd pods running.
 
-## Running mux
+Running mux
+-----------
 
 You will need a publicly accessible hostname to access the mux.  You can use a
 hostname alias in `/etc/hosts` as described above in
-[Installing](#installing-viaq)
+[Installing](#installing-viaq).  By default, the mux hostname is
+mux.`openshift_master_default_subdomain`
 
     10.16.19.171 openshift.logging.test kibana.logging.test mux.logging.test
 
@@ -207,8 +228,19 @@ You can test with `openssl s_client` like this:
     verify return:1
     ��HELO��nonce�Aa���3�/��Ps��auth��keepaliveÕ�PONG´invalid ping message��
 
-This means you are able to access the Fluentd secure_forward listener.  Don't
-worry about the garbage characters and invalid message.
+If you get something that looks like this: `Connection refused connect:errno=111`
+Try this:
+
+    # netstat -nlt|grep 24284
+
+It should show mux listening to port 24284 on some IP address:
+
+    tcp        0      0 10.16.19.171:24284        0.0.0.0:*               LISTEN
+
+Try `echo hello | openssl s_client -quiet -connect 10.16.19.171:24284`, or try
+`$(hostname):24284`.  If this works, this means you are able to access the
+Fluentd secure_forward listener.  Don't worry about the garbage characters and
+invalid message.
 
 There is a test script [test-mux.sh](test-mux.sh) you can use to test that the
 mux is working.  It will reconfigure the regular OpenShift Fluentd to send its
@@ -285,7 +317,8 @@ Then use `oc exec` and `curl` like this:
         "took": 15
     }
 
-## Getting the shared_key and CA cert
+Getting the shared_key and CA cert
+----------------------------------
 
 In order to configure the client side of Fluentd secure_forward, you will need
 the values for the `shared_key` and the `ca_cert_path`.  For the first
@@ -305,7 +338,8 @@ Use the `mux-ca.crt` and `mux-shared-key` to configure the Fluent
 secure_forward clients.  The `setup-mux.sh` script will generate these for you,
 but use the above instructions if you need to regenerate them.
 
-## Client side setup
+Client side setup
+-----------------
 
 The client side setup should look something like this:
 
@@ -323,7 +357,8 @@ The client side setup should look something like this:
       </server>
     </match>
 
-## Running Kibana
+Running Kibana
+--------------
 
 You will first need to create an OpenShift user and assign this user rights to
 view the application and operations logs.  The install above uses the
