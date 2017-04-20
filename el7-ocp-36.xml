@@ -1,0 +1,74 @@
+<job retention_tag="scratch">
+	<whiteboard>
+		OpenShift logging testing
+	</whiteboard>
+	<recipeSet priority="High">
+		<recipe kernel_options="" kernel_options_post="" ks_meta="partitions=yes" role="RECIPE_MEMBERS" whiteboard="OpenShift logging testing">
+			<autopick random="false"/>
+			<watchdog panic="ignore"/>
+			<ks_appends/>
+            <repos>
+                <repo name="rhel7" url="http://download.lab.bos.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/"/>
+                <repo name="rhel7_optional" url="http://download.lab.bos.redhat.com/rel-eng/latest-RHEL-7/compose/Server-optional/x86_64/os/"/>
+                <repo name="rhel7_extras" url="http://download.lab.bos.redhat.com/rel-eng/latest-EXTRAS-7-RHEL-7/compose/Server/x86_64/os/"/>
+                <repo name="rhaos_34" url="http://download-node-02.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.4/latest/x86_64/os/"/>
+                <repo name="rhaos_36" url="http://download.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.6/latest/x86_64/os/"/>
+            </repos>
+            <packages>
+                <package name="bc"/>
+                <package name="sysstat"/>
+                <package name="strace"/>
+                <package name="git"/>
+                <package name="curl"/>
+                <package name="screen"/>
+                <package name="wget"/>
+                <package name="net-tools"/>
+                <package name="docker"/>
+                <package name="java-headless"/>
+                <package name="golang"/>
+                <package name="iptables-services"/>
+                <package name="ansible"/>
+                <package name="openshift-ansible"/>
+                <package name="openshift-ansible-callback-plugins"/>
+                <package name="openshift-ansible-filter-plugins"/>
+                <package name="openshift-ansible-lookup-plugins"/>
+                <package name="openshift-ansible-playbooks"/>
+                <package name="openshift-ansible-roles"/>
+           </packages>
+			<distroRequires>
+				<and>
+					<distro_family op="=" value="RedHatEnterpriseLinux7"/>
+					<distro_variant op="=" value="Server"/>
+					<distro_name op="=" value="RHEL-7.4-20170410.n.3"/>
+					<distro_arch op="=" value="x86_64"/>
+				</and>
+			</distroRequires>
+            <hostRequires>
+                <and>
+                    <!-- 8000 is 8GB - increase if needed -->
+                    <key_value key="MEMORY" op="&gt;" value="8000"/>
+                    <!-- 250000 is 250GB - increase if needed -->
+                    <key_value key="DISK" op="&gt;" value="250000"/>
+                    <key_value key="PROCESSORS" op="&gt;" value="3"/>
+                </and>
+            </hostRequires>
+			<task name="/distribution/install" role="STANDALONE"/>
+            <task name="/distribution/command" role="STANDALONE">
+                <params>
+                    <param name="CMDS_TO_RUN" value="git clone ssh://git.app.eng.bos.redhat.com/git/ViaQ.git /root/ViaQ -b 3.6"/>
+                </params>
+            </task>
+            <task name="/distribution/command" role="STANDALONE">
+                <params>
+                    <param name="CMDS_TO_RUN" value="/root/ViaQ/run-from-beaker.sh ansible-inventory-ocp-36-aio-internal"/>
+                </params>
+            </task>
+            <task name="/distribution/reservesys" role="STANDALONE">
+	            <params>
+	                <param name="RESERVEBY" value="nhosoi@redhat.com"/>
+	                <param name="RESERVETIME" value="604800"/>
+	            </params>
+	        </task>
+		</recipe>
+	</recipeSet>
+</job>

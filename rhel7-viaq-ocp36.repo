@@ -1,0 +1,23 @@
+[rhel7]
+gpgcheck = 0
+enabled = 1
+baseurl = http://download.lab.bos.redhat.com/rel-eng/latest-RHEL-7/compose/Server/x86_64/os/
+name = rhel7
+
+[rhel7_optional]
+gpgcheck = 0
+enabled = 1
+baseurl = http://download.lab.bos.redhat.com/rel-eng/latest-RHEL-7/compose/Server-optional/x86_64/os/
+name = rhel7-optional
+
+[rhel7_extras]
+gpgcheck = 0
+enabled = 1
+baseurl = http://download.lab.bos.redhat.com/rel-eng/latest-EXTRAS-7-RHEL-7/compose/Server/x86_64/os/
+name = rhel7-extras
+
+[rhaos_36]
+gpgcheck = 0
+enabled = 1
+baseurl = http://download.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.6/latest/x86_64/os/
+name = rhaos-36
