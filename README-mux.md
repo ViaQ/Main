@@ -29,14 +29,19 @@ ViaQ on OCP requires a RHEL 7.3 or later machine.  ViaQ on Origin requires a
 up-to-date CentOS 7 machine.  You must be able to ssh into the machine using an
 ssh keypair.  This means you will need to:
 
-* provide a ssh pubkey
-* create a user account (or use root)
-* add the ssh pubkey to the user account `~/.ssh/authorized_keys`
-  * or use `ssh-copy-id -i /path/to/my/id_rsa.pub ...` to copy one over
+* assign the machine an FQDN and IP address so that it can be reached from
+  another machine - these are the **public_hostname** and **public_ip**
+* use `root` (or create a user account) - this user will be referred to below
+  as `$USER`
+* provide an ssh pubkey for this user account (`ssh-keygen`)
+* add the ssh pubkey to the user account `$USER/.ssh/authorized_keys`
+  * `cat $USER/.ssh/id_rsa.pub >> $USER/.ssh/authorized_keys`
 * add the ssh hostkey for localhost to your SSH `known_hosts`
-  * `ssh-keyscan -H localhost >> ~/.ssh/known_hosts`
-* enable passwordless sudo (if not using root above) e.g. in sudoers config:
-  * `centos ALL=(ALL) NOPASSWD:ALL`
+  * `ssh-keyscan -H localhost >> $USER/.ssh/known_hosts`
+* add the ssh hostkey for **public_hostname** to your SSH `known_hosts`
+  * `ssh-keyscan -H **public_hostname** >> $USER/.ssh/known_hosts`
+* if not using root, enable passwordless sudo e.g. in sudoers config:
+  * `$USER ALL=(ALL) NOPASSWD:ALL`
 * allow connections on the following ports/protocols:
   * icmp (for ping)
   * tcp ports 22, 80, 443, 8443 (openshift console), 24284 (secure_forward)
@@ -106,34 +111,54 @@ It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
 the `ansible-playbook` command below.
 
-Copy `vars.yaml.template` to `vars.yaml`.  You will need to change the
-following fields in `vars.yaml`:
+Copy `vars.yaml.template` to `vars.yaml`.  Then edit `vars.yaml`.  You can use
+ansible to check some of the values, to see which values you need to edit. For
+example, use
 
-* `ansible_ssh_user` - this is the user created in
+    ansible -m setup localhost -a 'filter=ansible_fqdn'
+
+to see if ansible correctly reports your host's FQDN, the **public_hostname**
+value from above.  If so, then you do not have to edit
+`openshift_public_hostname` below.  Use
+
+    ansible -m setup localhost -a 'filter=ansible_eth0'
+
+to see if ansible correctly reports your IP address in the `"ipv4":{"address"}`
+field, which should be the same as the **public_ip** value from above.  If so,
+then you do not have to edit `openshift_public_ip`.  Depending on what you can
+determine using ansible, you may need to change the following fields in
+`vars.yaml`:
+
+* `ansible_ssh_user` - this is either `root`, or the user created in
   [provisioning](#provisioning-a-machine-to-run-viaq) which can use
   passwordless ssh
 * `ansible_become` - use `no` if `ansible_ssh_user` is `root`, otherwise,
   use `yes`
+* `openshift_public_hostname` - this is the **public_hostname** value mentioned
+  above which should have been assigned during the provisioning of the
+  machine.  This must be an FQDN, and must be accessible from another machine.
+* `openshift_public_ip` - this is the **public_ip** address value mentioned
+  above which should have been assigned during the provisioning of the machine.
+  This is the IP address that will be used from other machines to connect to
+  this machine.  It will typically be used in your DNS, `/etc/hosts`, or
+  whatever host look up is used for browsers and other external client
+  programs.  For example, in OpenStack, this will be the **floating ip**
+  address of the machine.  This may be the same as the `eth0` IP address of the
+  machine, in which case, just use `"{{ ansible_eth0.ipv4.address }}"` as the
+  value
 * `openshift_master_default_subdomain` - this is the public subdomain to use
   for all of the external facing logging services, such as the OpenShift UI,
-  Kibana, mux, and Elasticsearch.  By default, the public hostname will be
-  used, and the OpenShift UI will be accessed via `https://{{
-  openshift_master_default_subdomain }}:8443`, Kibana will be at
-  `https://kibana.{{ openshift_master_default_subdomain }}`,
-  etc.
-* `openshift_public_hostname` - set this if you want to use a different value
-  than `openshift_master_default_subdomain`
-* `openshift_public_ip` - this is the public IP address, the IP address used in
-  your internal DNS or host look up for browsers and other external client
-  programs.  For example, in OpenStack, this will be the **floating ip** address
-  of the machine.  This may be the same as the `eth0` IP address of the machine,
-  in which case, just use `"{{ ansible_eth0.ipv4.address }}"` as the value, as
-  is done for `openshift_ip`
+  Kibana, mux, and Elasticsearch.  By default, the
+  **openshift_public_hostname** will be used.  Kibana will be accessed at
+  `https://kibana.{{ openshift_master_default_subdomain }}`, etc.
 * `openshift_hostname` - this is the private hostname of the machine that will
   be used inside the cluster.  For example, OpenStack machines will have a
   "private" hostname assigned by Neutron networking.  This may be the same as
   the external hostname if you do not have a "private" hostname - in that case,
   just use `{{ openshift_public_hostname }}`
+* `openshift_ip` - the private IP address, if your machine has a different
+  public and private IP address - this is almost always the value reported by
+  `ansible -m setup localhost -a filter=ansible_eth0` as described above
 * `openshift_hosted_logging_master_public_url` - this is the public URL for
   OpenShift UI access - you can usually use the default value
 * `openshift_hosted_logging_hostname` - this is the public hostname for Kibana

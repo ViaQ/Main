@@ -1,19 +1,28 @@
 # either root, or the user created in provisioning step which can use passwordless ssh
 ansible_ssh_user: root
+
 # no if root, yes otherwise
 ansible_become: no
+
+# the public FQDN of the machine assigned during provisioning
+openshift_public_hostname: "{{ ansible_fqdn }}"
+
+# the public IP address, the IP address used in your internal DNS or host look up for browsers and other external client programs
+openshift_public_ip: "{{ ansible_eth0.ipv4.address }}"
+
 # the public subdomain to use for all of the external facing logging services
 # by default it is the same as the public hostname
-openshift_master_default_subdomain: $OPENSHIFT_PUBLIC_HOSTNAME
-# the public IP address, the IP address used in your internal DNS or host look up for browsers and other external client programs
-openshift_public_ip: $OPENSHIFT_PUBLIC_IP
+openshift_master_default_subdomain: "{{ openshift_public_hostname }}"
+
 # the private IP address, if your machine has a different public and private IP address
 openshift_ip: "{{ ansible_eth0.ipv4.address }}"
-# set this if you want to use a different value than `openshift_master_default_subdomain`
-openshift_public_hostname: "{{ openshift_master_default_subdomain }}"
-# the private hostname of the machine that will be used inside the cluster
-openshift_hostname: $OPENSHIFT_PRIVATE_HOSTNAME
+
+# the private hostname of the machine that will be used inside the cluster, if different
+# than the openshift_public_hostname
+openshift_hostname: "{{ openshift_public_hostname }}"
+
 # the public URL for OpenShift UI access
 openshift_hosted_logging_master_public_url: https://{{ openshift_public_hostname }}:8443
+
 # the public hostname for Kibana browser access
 openshift_hosted_logging_hostname: kibana.{{ openshift_master_default_subdomain }}
