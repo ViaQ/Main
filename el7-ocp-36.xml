@@ -1,9 +1,9 @@
 <job retention_tag="scratch">
 	<whiteboard>
-		OpenShift logging testing
+		OpenShift OCP 3.6 logging testing
 	</whiteboard>
 	<recipeSet priority="High">
-		<recipe kernel_options="" kernel_options_post="" ks_meta="partitions=yes" role="RECIPE_MEMBERS" whiteboard="OpenShift logging testing">
+		<recipe kernel_options="" kernel_options_post="" ks_meta="partitions=yes" role="RECIPE_MEMBERS" whiteboard="OpenShift OCP 3.6 logging testing">
 			<autopick random="false"/>
 			<watchdog panic="ignore"/>
 			<ks_appends/>
@@ -12,7 +12,8 @@
                 <repo name="rhel7_optional" url="http://download.lab.bos.redhat.com/rel-eng/latest-RHEL-7/compose/Server-optional/x86_64/os/"/>
                 <repo name="rhel7_extras" url="http://download.lab.bos.redhat.com/rel-eng/latest-EXTRAS-7-RHEL-7/compose/Server/x86_64/os/"/>
                 <repo name="rhaos_34" url="http://download-node-02.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.4/latest/x86_64/os/"/>
-                <repo name="rhaos_36" url="http://download.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.6/latest/x86_64/os/"/>
+                <repo name="rhaos_35" url="http://download-node-02.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.5/latest/x86_64/os/"/>
+                <repo name="rhaos_36" url="http://download-node-02.eng.bos.redhat.com/rcm-guest/puddles/RHAOS/AtomicOpenShift/3.6/latest/x86_64/os/"/>
             </repos>
             <packages>
                 <package name="bc"/>
@@ -39,7 +40,7 @@
 				<and>
 					<distro_family op="=" value="RedHatEnterpriseLinux7"/>
 					<distro_variant op="=" value="Server"/>
-					<distro_name op="=" value="RHEL-7.4-20170410.n.3"/>
+					<distro_name op="=" value="RHEL-7.4-20170426.4"/>
 					<distro_arch op="=" value="x86_64"/>
 				</and>
 			</distroRequires>
@@ -65,7 +66,7 @@
             </task>
             <task name="/distribution/reservesys" role="STANDALONE">
 	            <params>
-	                <param name="RESERVEBY" value="nhosoi@redhat.com"/>
+	                <param name="RESERVEBY" value="rmeggins@redhat.com"/>
 	                <param name="RESERVETIME" value="604800"/>
 	            </params>
 	        </task>
