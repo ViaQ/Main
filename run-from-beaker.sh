@@ -40,18 +40,6 @@ fi
 ssh-keyscan -H $hostname >> /root/.ssh/known_hosts
 ssh-keyscan -H localhost >> /root/.ssh/known_hosts
 
-# create vars.yaml file
-# cat > $HOME/ViaQ/vars.yaml <<EOF
-# ansible_ssh_user: root
-# ansible_become: false
-# openshift_public_hostname: "{{ ansible_fqdn }}"
-# openshift_master_default_subdomain: "{{ openshift_public_hostname }}"
-# openshift_public_ip: "{{ ansible_eth0.ipv4.address }}"
-# openshift_ip: "{{ ansible_eth0.ipv4.address }}"
-# openshift_hostname: "{{ openshift_public_hostname }}"
-# openshift_hosted_logging_master_public_url: https://{{ openshift_public_hostname }}:8443
-# openshift_hosted_logging_hostname: kibana.{{ openshift_master_default_subdomain }}
-# EOF
 cp $HOME/ViaQ/vars.yaml.template $HOME/ViaQ/vars.yaml
 cp $HOME/ViaQ/$INVENTORY_SOURCE $HOME/ViaQ/$INVENTORY
 # run ansible

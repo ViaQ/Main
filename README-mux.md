@@ -121,11 +121,17 @@ to see if ansible correctly reports your host's FQDN, the **public_hostname**
 value from above.  If so, then you do not have to edit
 `openshift_public_hostname` below.  Use
 
-    ansible -m setup localhost -a 'filter=ansible_eth0'
+    ansible -m setup localhost -a 'filter=ansible_default_ipv4'
 
-to see if ansible correctly reports your IP address in the `"ipv4":{"address"}`
-field, which should be the same as the **public_ip** value from above.  If so,
-then you do not have to edit `openshift_public_ip`.  Depending on what you can
+to see if ansible correctly reports your IP address in the `"address"` field,
+which should be the same as the **public_ip** value from above.  If so, then
+you do not have to edit `openshift_public_ip`.  You can also verify which IP
+address is used for external use by using the following command:
+
+    $ ip -4 route get 8.8.8.8
+    8.8.8.8 via 10.0.0.1 dev enp0s25 src 10.10.10.10 uid 1000
+
+This means your IP address is `10.10.10.10`.  Depending on what you can
 determine using ansible, you may need to change the following fields in
 `vars.yaml`:
 
@@ -144,7 +150,7 @@ determine using ansible, you may need to change the following fields in
   whatever host look up is used for browsers and other external client
   programs.  For example, in OpenStack, this will be the **floating ip**
   address of the machine.  This may be the same as the `eth0` IP address of the
-  machine, in which case, just use `"{{ ansible_eth0.ipv4.address }}"` as the
+  machine, in which case, just use `"{{ ansible_default_ipv4.address }}"` as the
   value
 * `openshift_master_default_subdomain` - this is the public subdomain to use
   for all of the external facing logging services, such as the OpenShift UI,
@@ -158,7 +164,7 @@ determine using ansible, you may need to change the following fields in
   just use `{{ openshift_public_hostname }}`
 * `openshift_ip` - the private IP address, if your machine has a different
   public and private IP address - this is almost always the value reported by
-  `ansible -m setup localhost -a filter=ansible_eth0` as described above
+  `ansible -m setup localhost -a filter=ansible_default_ipv4` as described above
 * `openshift_hosted_logging_master_public_url` - this is the public URL for
   OpenShift UI access - you can usually use the default value
 * `openshift_hosted_logging_hostname` - this is the public hostname for Kibana
