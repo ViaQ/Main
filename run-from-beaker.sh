@@ -49,6 +49,11 @@ cd $OPENSHIFT_ANSIBLE_DIR
 setenforce Permissive
 # ^^^ HACK HACK HACK
 
+for file in $HOME/ViaQ/*.patch ; do
+    if [ -f "$file" ] ; then
+        patch -p1 -b < $file
+    fi
+done
 ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv -e @$HOME/ViaQ/$VARS -i $HOME/ViaQ/$INVENTORY playbooks/byo/config.yml
 
 oc project logging
