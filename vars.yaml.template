@@ -22,7 +22,7 @@ openshift_ip: "{{ ansible_default_ipv4.address }}"
 openshift_hostname: "{{ openshift_public_hostname }}"
 
 # the public URL for OpenShift UI access
-openshift_hosted_logging_master_public_url: https://{{ openshift_public_hostname }}:8443
+openshift_logging_master_public_url: https://{{ openshift_public_hostname }}:8443
 
 # the public hostname for Kibana browser access
-openshift_hosted_logging_hostname: kibana.{{ openshift_master_default_subdomain }}
+openshift_logging_kibana_hostname: kibana.{{ openshift_master_default_subdomain }}

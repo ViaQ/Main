@@ -173,9 +173,9 @@ determine using ansible, you may need to change the following fields in
 * `openshift_ip` - the private IP address, if your machine has a different
   public and private IP address - this is almost always the value reported by
   `ansible -m setup localhost -a filter=ansible_default_ipv4` as described above
-* `openshift_hosted_logging_master_public_url` - this is the public URL for
+* `openshift_logging_master_public_url` - this is the public URL for
   OpenShift UI access - you can usually use the default value
-* `openshift_hosted_logging_hostname` - this is the public hostname for Kibana
+* `openshift_logging_kibana_hostname` - this is the public hostname for Kibana
   browser access - you can usually use the default value
 
 You can also override variables in the inventory by setting them in `vars.yaml`.
@@ -188,7 +188,7 @@ You can also override variables in the inventory by setting them in `vars.yaml`.
 * `10.16.19.171` - replace this with your `openshift_public_ip`
 * `192.168.122.4` - replace this with your `openshift_ip`
 * `openshift.logging.test` - replace this with your `openshift_public_hostname`
-* `kibana.logging.test` - replace this with `openshift_hosted_logging_hostname`
+* `kibana.logging.test` - replace this with `openshift_logging_kibana_hostname`
 * `mux.logging.test` - replace this with mux.`openshift_master_default_subdomain`
 
 The public hostname would typically be a DNS entry for the
