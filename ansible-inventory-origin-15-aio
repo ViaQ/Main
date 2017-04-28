@@ -11,10 +11,10 @@ openshift_logging_install_logging=true
 short_version=1.5
 openshift_deployment_type=origin
 openshift_logging_namespace=logging
-openshift_logging_image_prefix=docker.io/openshift/origin-
 openshift_master_identity_providers=[{'challenge': 'true', 'login': 'true', 'kind': 'AllowAllPasswordIdentityProvider', 'name': 'allow_all'}]
 openshift_logging_es_cluster_size=1
-openshift_logging_image_version=v1.5
+openshift_logging_image_prefix=docker.io/openshift/origin-
+openshift_logging_image_version=v1.5.0
 deployment_type=origin
 
 [nodes]
