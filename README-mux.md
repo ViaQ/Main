@@ -382,6 +382,16 @@ Client side setup
 
 The client side setup should look something like this:
 
+    # warn is too verbose unless you are debugging
+    <system>
+      log_level error
+    </system>
+
+    # do not send internal fluentd events to mux
+    <match fluent.**>
+      @type stdout
+    </match>
+
     <match **something**>
       @type secure_forward
       self_hostname forwarding-${hostname}
@@ -405,11 +415,11 @@ AllowAllPasswordIdentityProvider which makes it easy to create test users like
 this:
 
     # oc project logging
-    # oc login --username=kibtest --password=kibtest
+    # oc login --username=admin --password=admin
     # oc login --username=system:admin
-    # oadm policy add-cluster-role-to-user cluster-admin kibtest
+    # oadm policy add-cluster-role-to-user cluster-admin admin
 
-Now you can use the `kibtest` username and password to access Kibana.  Just
+Now you can use the `admin` username and password to access Kibana.  Just
 point your web browser at `https://kibana.logging.test` where the
 `logging.test` part is whatever you specified in the 
 `openshift_master_default_subdomain` parameter in the `vars.yaml` file.
