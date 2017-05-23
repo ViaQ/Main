@@ -95,8 +95,9 @@ get_mux_config_files() {
     @type record_transformer
     enable_ruby
     <record>
-      mux_namespace_name \${(tag_parts[0] == "project" && tag_parts[1]) ? tag_parts[1] : (ENV["MUX_UNDEFINED_NAMESPACE"] || "mux-undefined")}
-      mux_need_k8s_meta \${record.fetch('kubernetes', {})['namespace_uuid'].nil? ? "true" : "false"}
+      mux_namespace_name \${record['namespace_name'] || (tag_parts[0] == "project" && tag_parts[1]) || ENV["MUX_UNDEFINED_NAMESPACE"] || "mux-undefined"}
+      mux_need_k8s_meta \${(record['namespace_uuid'] || record.fetch('kubernetes', {})['namespace_id'].nil?) ? "true" : "false"}
+      kubernetes {"namespace_name":"\${record['namespace_name'] || (tag_parts[0] == 'project' && tag_parts[1]) || ENV['MUX_UNDEFINED_NAMESPACE'] || 'mux-undefined'}","namespace_id":"\${record['namespace_uuid'] || record.fetch('kubernetes', {})['namespace_id']}"}
     </record>
   </filter>
   # if the record already has k8s metadata (e.g. record forwarded from another
@@ -128,8 +129,16 @@ EOF
   # remove any fields added by previous steps
   @type record_transformer
   enable_ruby
-  remove_keys mux_namespace_name,docker,CONTAINER_NAME,CONTAINER_ID_FULL,mux_need_k8s_meta
+  remove_keys mux_namespace_name,docker,CONTAINER_NAME,CONTAINER_ID_FULL,mux_need_k8s_meta,namespace_name,namespace_uuid
 </filter>
+EOF
+
+    cat > $1/output-pre-internal.conf <<EOF
+<match fluent.**>
+  @type file
+  path /var/log/mux
+  time_slice_format %H
+</match>
 EOF
 }
 
@@ -243,6 +252,7 @@ else
             -e "/openshift\/input-post-/r $workdir/input-post-forward-mux.conf" \
             -e "/openshift\/filter-pre-/r $workdir/filter-pre-mux.conf" \
             -e "/openshift\/filter-post-/r $workdir/filter-post-mux.conf" \
+            -e "/openshift\/output-pre-/r $workdir/output-pre-internal.conf" \
             > $workdir/fluent.conf
     oc create -n logging configmap logging-mux \
        --from-file=fluent.conf=$workdir/fluent.conf > /dev/null
