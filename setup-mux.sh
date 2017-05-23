@@ -222,8 +222,13 @@ oadm new-project mux-undefined --node-selector='' > /dev/null
 
 # add namespaces for projects
 for ns in ${MUX_NAMESPACES:-} ; do
-    info adding namespace [$ns]
-    oadm new-project $ns --node-selector='' > /dev/null
+    if oc get project $ns > /dev/null 2>&1 ; then
+        info using existing project [$ns] - not recreating
+        info "  " delete with \"oc delete project $ns\"
+    else
+        info adding namespace [$ns]
+        oadm new-project $ns --node-selector='' > /dev/null
+    fi
 done
 
 # # allow externalIPs in services
