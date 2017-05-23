@@ -58,6 +58,15 @@ get_mux_config_files() {
   private_key_path /etc/fluent/muxkeys/mux-key
   private_key_passphrase not_used_key_is_unencrypted
 </source>
+<source>
+  @type tcp
+  bind "#{ENV['TCP_JSON_BIND_ADDR'] || '0.0.0.0'}"
+  port "#{ENV['TCP_JSON_PORT'] || '23456'}"
+  tag "#{ENV['TCP_JSON_TAG'] || 'tcpjson'}"
+  log_level "#{ENV['TCP_JSON_LOG_LEVEL'] || 'error'}"
+  format json
+  @label @MUX
+</source>
 <label @MUX>
   # these are usually coming as raw logs from an openshift fluentd acting
   # as a collector only
@@ -132,6 +141,11 @@ if [ -z "$MUX_PUBLIC_IP" ] ; then
 fi
 
 FORWARD_LISTEN_PORT=${FORWARD_LISTEN_PORT:-24284}
+
+TCP_JSON_PORT=${TCP_JSON_PORT:-23456}
+
+MUX_MEMORY_LIMIT=${MUX_MEMORY_LIMIT:-2Gi}
+MUX_CPU_LIMIT=${MUX_CPU_LIMIT:-500m}
 
 MASTER_CONFIG_DIR=${MASTER_CONFIG_DIR:-/etc/origin/master}
 
@@ -259,6 +273,8 @@ cat > $workdir/2 <<EOF
         ports:
         - containerPort: ${FORWARD_LISTEN_PORT}
           name: mux-forward
+        - containerPort: ${TCP_JSON_PORT}
+          name: tcp-json
         volumeMounts:
         - mountPath: /etc/fluent/configs.d/user
           name: config
@@ -302,6 +318,10 @@ cat > $workdir/4 <<EOF
           value: ${FORWARD_LISTEN_HOST}
         - name: FORWARD_LISTEN_PORT
           value: "${FORWARD_LISTEN_PORT}"
+        - name: TCP_JSON_PORT
+          value: "${TCP_JSON_PORT}"
+        - name: MUX_ALLOW_EXTERNAL
+          value: "true"
         - name: USE_MUX
           value: "true"
         - name: USE_JOURNAL
@@ -330,6 +350,8 @@ sed -i -e 's/logging-infra: fluentd/logging-infra: mux/g' \
     -e '/^      volumes:/,$d' \
     -e "/^      terminationGracePeriodSeconds:/r $workdir/3" \
     -e "/^      - env:/r $workdir/4" \
+    -e "s/cpu: .*$/cpu: ${MUX_CPU_LIMIT}/" \
+    -e "s/memory: .*$/memory: ${MUX_MEMORY_LIMIT}/" \
     $workdir/mux.yaml
 
 oc create -f $workdir/mux.yaml > /dev/null
@@ -346,6 +368,10 @@ spec:
       port: ${FORWARD_LISTEN_PORT}
       targetPort: mux-forward
       name: mux-forward
+    -
+      port: ${TCP_JSON_PORT}
+      targetPort: tcp-json
+      name: tcp-json
   externalIPs:
   - $MUX_PUBLIC_IP
   selector:
