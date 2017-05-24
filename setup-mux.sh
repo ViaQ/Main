@@ -192,7 +192,6 @@ oc delete -n logging secret logging-mux  > /dev/null 2>&1|| :
 oc delete -n logging configmap logging-mux  > /dev/null 2>&1|| :
 oc delete -n logging service logging-mux  > /dev/null 2>&1|| :
 oc delete -n logging route logging-mux  > /dev/null 2>&1|| :
-oc delete project mux-undefined  > /dev/null 2>&1 && sleep 10 || : # give it some time before recreating
 
 # generate mux server cert/key
 info generate mux server cert, key
@@ -218,13 +217,10 @@ oc secrets -n logging add serviceaccount/aggregated-logging-fluentd \
    logging-fluentd logging-mux > /dev/null
 
 # add namespace for records from unknown namespaces
-info add namespace [mux-undefined] for records from unknown namespaces
-oadm new-project mux-undefined --node-selector='' > /dev/null
-
-# add namespaces for projects
-for ns in ${MUX_NAMESPACES:-} ; do
+# add namespaces for remote clients
+for ns in mux-undefined ${MUX_NAMESPACES:-} ; do
     if oc get project $ns > /dev/null 2>&1 ; then
-        info using existing project [$ns] - not recreating
+        info using existing namespace [$ns] - not recreating
         info "  " delete with \"oc delete project $ns\"
     else
         info adding namespace [$ns]
