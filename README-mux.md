@@ -225,8 +225,8 @@ To confirm that OpenShift and logging are working:
 
 You should see the Elasticsearch, Curator, Kibana, and Fluentd pods running.
 
-Running mux
------------
+Configuring mux
+---------------
 
 You will need a publicly accessible hostname to access the mux.  You can use a
 hostname alias in `/etc/hosts` as described above in
@@ -235,12 +235,21 @@ mux.`openshift_master_default_subdomain`
 
     10.16.19.171 openshift.logging.test kibana.logging.test mux.logging.test
 
-Download and run the [setup-mux.sh](setup-mux.sh) script:
+Download and run the [setup-mux.sh](setup-mux.sh) script.  The only required
+parameter is `MUX_HOST` which is the FQDN you will use to access mux
+externally, and will also be used in the mux TLS server cert subject DN.  The
+`MUX_NAMESPACES` parameter is used to pass in a list of space-delimited
+namespaces to create in mux for your logs.  See
+[mux-logging-service.md](https://github.com/openshift/origin-aggregated-logging/blob/master/docs/mux-logging-service.md)
+for a description about how mux detects and separates logs into
+namespaces. Basically, you can specify a namespace for your logs, and only
+users who are members of those namespaces can view those logs.  If you do not
+use `MUX_NAMESPACES` your logs will go into the `mux-undefined` namespace.
 
     # oc project logging
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/setup-mux.sh > setup-mux.sh
     # chmod +x setup-mux.sh
-    # MUX_HOST=mux.logging.test ./setup-mux.sh
+    # MUX_HOST=mux.logging.test MUX_NAMESPACES="my-first-namespace my-other-ns" ./setup-mux.sh
 
 This will create the `logging-mux` configmap, secrets, dc, pod, and service.
 
@@ -251,12 +260,20 @@ This will create the `logging-mux` configmap, secrets, dc, pod, and service.
     NAME          CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
     logging-mux   172.30.215.88   10.0.0.3      24284/TCP   1h
 
+mux also creates a `TCP JSON` listener.  *THIS IS INSECURE - USE WITH
+CAUTION*.  By default it listens to port `23456`.  You can use this for testing
+clients that do not support fluentd secure_forward.  e.g.
+
+    $ echo '{"hello":"world","@timestamp":"2017-05-23T21:27:52.554908+00:00"}' | \
+      nc --send-only 192.168.122.4 23456
+
 The externalIP value should be the IP address of your `eth0` interface, or
 whichever interface on the machine is used for external egress.  The script
 should automatically determine this.  If it is unable to, specify it with
 the environment variable `MUX_PUBLIC_IP`:
 
-    # MUX_HOST=mux.logging.test MUX_PUBLIC_IP=192.168.122.4 ./setup-mux.sh
+    # MUX_HOST=mux.logging.test MUX_PUBLIC_IP=192.168.122.4 \
+      MUX_NAMESPACES="my-first-namespace my-other-ns" ./setup-mux.sh
 
 You can test with `openssl s_client` like this:
 
@@ -296,12 +313,14 @@ To search Elasticsearch, first get the name of the Elasticsearch pod:
     # oc project logging
     # espod=`oc get pods -l component=es -o jsonpath='{.items[0].metadata.name}'`
 
-Then use `oc exec` and `curl` like this:
+Then use `oc exec` and `curl` like this.  Substitute `logging` with
+`mux-undefined` or your namespace name:
 
     # oc exec $espod -- curl --connect-timeout 1 -s -k \
       --cert /etc/elasticsearch/secret/admin-cert \
       --key /etc/elasticsearch/secret/admin-key \
-      'https://localhost:9200/project.logging.*/_search?sort=@timestamp:desc' | python -mjson.tool | more
+      'https://localhost:9200/project.logging.*/_search?sort=@timestamp:desc' | \
+      python -mjson.tool | more
     {
         "_shards": {
             "failed": 0,
