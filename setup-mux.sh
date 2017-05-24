@@ -98,6 +98,7 @@ get_mux_config_files() {
       mux_namespace_name \${record['namespace_name'] || (tag_parts[0] == "project" && tag_parts[1]) || ENV["MUX_UNDEFINED_NAMESPACE"] || "mux-undefined"}
       mux_need_k8s_meta \${(record['namespace_uuid'] || record.fetch('kubernetes', {})['namespace_id'].nil?) ? "true" : "false"}
       kubernetes {"namespace_name":"\${record['namespace_name'] || (tag_parts[0] == 'project' && tag_parts[1]) || ENV['MUX_UNDEFINED_NAMESPACE'] || 'mux-undefined'}","namespace_id":"\${record['namespace_uuid'] || record.fetch('kubernetes', {})['namespace_id']}"}
+      time \${record['@timestamp'] || record['time'] || time.utc.to_datetime.rfc3339(6)}
     </record>
   </filter>
   # if the record already has k8s metadata (e.g. record forwarded from another
