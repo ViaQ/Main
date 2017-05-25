@@ -58,6 +58,15 @@ get_mux_config_files() {
   private_key_path /etc/fluent/muxkeys/mux-key
   private_key_passphrase not_used_key_is_unencrypted
 </source>
+<source>
+  @type tcp
+  bind "#{ENV['TCP_JSON_BIND_ADDR'] || '0.0.0.0'}"
+  port "#{ENV['TCP_JSON_PORT'] || '23456'}"
+  tag "#{ENV['TCP_JSON_TAG'] || 'tcpjson'}"
+  log_level "#{ENV['TCP_JSON_LOG_LEVEL'] || 'error'}"
+  format json
+  @label @MUX
+</source>
 <label @MUX>
   # these are usually coming as raw logs from an openshift fluentd acting
   # as a collector only
@@ -86,8 +95,10 @@ get_mux_config_files() {
     @type record_transformer
     enable_ruby
     <record>
-      mux_namespace_name \${(tag_parts[0] == "project" && tag_parts[1]) ? tag_parts[1] : (ENV["MUX_UNDEFINED_NAMESPACE"] || "mux-undefined")}
-      mux_need_k8s_meta \${record.fetch('kubernetes', {})['namespace_uuid'].nil? ? "true" : "false"}
+      mux_namespace_name \${record['namespace_name'] || (tag_parts[0] == "project" && tag_parts[1]) || ENV["MUX_UNDEFINED_NAMESPACE"] || "mux-undefined"}
+      mux_need_k8s_meta \${(record['namespace_uuid'] || record.fetch('kubernetes', {})['namespace_id'].nil?) ? "true" : "false"}
+      kubernetes {"namespace_name":"\${record['namespace_name'] || (tag_parts[0] == 'project' && tag_parts[1]) || ENV['MUX_UNDEFINED_NAMESPACE'] || 'mux-undefined'}","namespace_id":"\${record['namespace_uuid'] || record.fetch('kubernetes', {})['namespace_id']}"}
+      time \${record['@timestamp'] || record['time'] || time.utc.to_datetime.rfc3339(6)}
     </record>
   </filter>
   # if the record already has k8s metadata (e.g. record forwarded from another
@@ -119,8 +130,16 @@ EOF
   # remove any fields added by previous steps
   @type record_transformer
   enable_ruby
-  remove_keys mux_namespace_name,docker,CONTAINER_NAME,CONTAINER_ID_FULL,mux_need_k8s_meta
+  remove_keys mux_namespace_name,docker,CONTAINER_NAME,CONTAINER_ID_FULL,mux_need_k8s_meta,namespace_name,namespace_uuid
 </filter>
+EOF
+
+    cat > $1/output-pre-internal.conf <<EOF
+<match fluent.**>
+  @type file
+  path /var/log/mux
+  time_slice_format %H
+</match>
 EOF
 }
 
@@ -132,6 +151,11 @@ if [ -z "$MUX_PUBLIC_IP" ] ; then
 fi
 
 FORWARD_LISTEN_PORT=${FORWARD_LISTEN_PORT:-24284}
+
+TCP_JSON_PORT=${TCP_JSON_PORT:-23456}
+
+MUX_MEMORY_LIMIT=${MUX_MEMORY_LIMIT:-2Gi}
+MUX_CPU_LIMIT=${MUX_CPU_LIMIT:-500m}
 
 MASTER_CONFIG_DIR=${MASTER_CONFIG_DIR:-/etc/origin/master}
 
@@ -168,7 +192,6 @@ oc delete -n logging secret logging-mux  > /dev/null 2>&1|| :
 oc delete -n logging configmap logging-mux  > /dev/null 2>&1|| :
 oc delete -n logging service logging-mux  > /dev/null 2>&1|| :
 oc delete -n logging route logging-mux  > /dev/null 2>&1|| :
-oc delete project mux-undefined  > /dev/null 2>&1 && sleep 10 || : # give it some time before recreating
 
 # generate mux server cert/key
 info generate mux server cert, key
@@ -194,13 +217,15 @@ oc secrets -n logging add serviceaccount/aggregated-logging-fluentd \
    logging-fluentd logging-mux > /dev/null
 
 # add namespace for records from unknown namespaces
-info add namespace [mux-undefined] for records from unknown namespaces
-oadm new-project mux-undefined --node-selector='' > /dev/null
-
-# add namespaces for projects
-for ns in ${MUX_NAMESPACES:-} ; do
-    info adding namespace [$ns]
-    oadm new-project $ns --node-selector='' > /dev/null
+# add namespaces for remote clients
+for ns in mux-undefined ${MUX_NAMESPACES:-} ; do
+    if oc get project $ns > /dev/null 2>&1 ; then
+        info using existing namespace [$ns] - not recreating
+        info "  " delete with \"oc delete project $ns\"
+    else
+        info adding namespace [$ns]
+        oadm new-project $ns --node-selector='' > /dev/null
+    fi
 done
 
 # # allow externalIPs in services
@@ -229,6 +254,7 @@ else
             -e "/openshift\/input-post-/r $workdir/input-post-forward-mux.conf" \
             -e "/openshift\/filter-pre-/r $workdir/filter-pre-mux.conf" \
             -e "/openshift\/filter-post-/r $workdir/filter-post-mux.conf" \
+            -e "/openshift\/output-pre-/r $workdir/output-pre-internal.conf" \
             > $workdir/fluent.conf
     oc create -n logging configmap logging-mux \
        --from-file=fluent.conf=$workdir/fluent.conf > /dev/null
@@ -259,6 +285,8 @@ cat > $workdir/2 <<EOF
         ports:
         - containerPort: ${FORWARD_LISTEN_PORT}
           name: mux-forward
+        - containerPort: ${TCP_JSON_PORT}
+          name: tcp-json
         volumeMounts:
         - mountPath: /etc/fluent/configs.d/user
           name: config
@@ -302,6 +330,10 @@ cat > $workdir/4 <<EOF
           value: ${FORWARD_LISTEN_HOST}
         - name: FORWARD_LISTEN_PORT
           value: "${FORWARD_LISTEN_PORT}"
+        - name: TCP_JSON_PORT
+          value: "${TCP_JSON_PORT}"
+        - name: MUX_ALLOW_EXTERNAL
+          value: "true"
         - name: USE_MUX
           value: "true"
         - name: USE_JOURNAL
@@ -330,6 +362,8 @@ sed -i -e 's/logging-infra: fluentd/logging-infra: mux/g' \
     -e '/^      volumes:/,$d' \
     -e "/^      terminationGracePeriodSeconds:/r $workdir/3" \
     -e "/^      - env:/r $workdir/4" \
+    -e "s/cpu: .*$/cpu: ${MUX_CPU_LIMIT}/" \
+    -e "s/memory: .*$/memory: ${MUX_MEMORY_LIMIT}/" \
     $workdir/mux.yaml
 
 oc create -f $workdir/mux.yaml > /dev/null
@@ -346,6 +380,10 @@ spec:
       port: ${FORWARD_LISTEN_PORT}
       targetPort: mux-forward
       name: mux-forward
+    -
+      port: ${TCP_JSON_PORT}
+      targetPort: tcp-json
+      name: tcp-json
   externalIPs:
   - $MUX_PUBLIC_IP
   selector:
