@@ -107,13 +107,17 @@ To use ViaQ on Red Hat OCP, use the
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
 
-There is currently a bug in openshift-ansible 1.5
-[cert_ext bug](https://github.com/openshift/openshift-ansible/pull/4019) which
-requires the following patch:
+There was currently a bug in openshift-ansible 1.5 
+[cert_ext bug](https://github.com/openshift/openshift-ansible/pull/4019) which was corrected upstream and in OCP.
+It used to require the following patch:
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/0001-Compatibility-updates-to-openshift_logging-role-for-.patch > 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
     # cd /usr/share/ansible/openshift-ansible
     # patch -p1 -b < 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
+
+If you try to apply it and receive the following message, you can reply no and go ahead:
+
+    Reversed (or previously applied) patch detected!  Assume -R? [n]
 
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
