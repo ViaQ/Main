@@ -46,12 +46,24 @@ ssh keypair.  This means you will need to:
   * icmp (for ping)
   * tcp ports 22, 80, 443, 8443 (openshift console), 24284 (secure_forward)
 
+To verify that passwordless ssh works, and that you do not get prompted to
+accept host verification, try this:
+
+    # ssh localhost 'ls -al'
+    # ssh **public_hostname** 'ls -al'
+
+You should not be prompted for a password nor to accept the host verification.
+
 This will allow you to access the machine via ssh (in order to run Ansible -
 see below), to access the external services such as Kibana and mux, and to
 access the OpenShift UI console.  Yes, openshift-ansible in some cases will
 attempt to ssh to localhost.
 
-ViaQ on OCP requires a RHEL and OCP subscription.
+ViaQ on OCP requires a RHEL and OCP subscription.  For more information about
+RHEL configuration, see
+[Host Registration](https://access.redhat.com/documentation/en-us/openshift_container_platform/3.5/html/installation_and_configuration/installing-a-cluster#host-registration)
+For RHEL, you must enable the Extras and the rhel-7-fast-datapath-rpms channels
+(for docker and ovs, among others).
 
 ViaQ on Origin requires these [Yum Repos](centos7-viaq.repo).
 You will need to install the following packages: docker iptables-services
@@ -106,18 +118,6 @@ To use ViaQ on Red Hat OCP, use the
 [ansible-inventory-ocp-35-aio](ansible-inventory-ocp-35-aio) file:
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
-
-There was currently a bug in openshift-ansible 1.5 
-[cert_ext bug](https://github.com/openshift/openshift-ansible/pull/4019) which was corrected upstream and in OCP.
-It used to require the following patch:
-
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/0001-Compatibility-updates-to-openshift_logging-role-for-.patch > 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
-    # cd /usr/share/ansible/openshift-ansible
-    # patch -p1 -b < 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
-
-If you try to apply it and receive the following message, you can reply no and go ahead:
-
-    Reversed (or previously applied) patch detected!  Assume -R? [n]
 
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
