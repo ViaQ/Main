@@ -119,7 +119,7 @@ To use ViaQ on Red Hat OCP, use the
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
     
-There is currently a bug in openshift-ansible 1.5 cert_ex1 bug which requires the following patch:
+There is currently a bug in openshift-ansible 1.5 [cert_ext bug](https://github.com/openshift/openshift-ansible/pull/4019) which requires the following patch:
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/0001-Compatibility-updates-to-openshift_logging-role-for-.patch > 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
     # cd /usr/share/ansible/openshift-ansible/
