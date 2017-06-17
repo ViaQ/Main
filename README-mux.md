@@ -118,7 +118,13 @@ To use ViaQ on Red Hat OCP, use the
 [ansible-inventory-ocp-35-aio](ansible-inventory-ocp-35-aio) file:
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
+    
+There is currently a bug in openshift-ansible 1.5 cert_ex1 bug which requires the following patch:
 
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/0001-Compatibility-updates-to-openshift_logging-role-for-.patch > 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
+    # cd /usr/share/ansible/openshift-ansible/
+    # patch -p1 -b < 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
+    
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
 the `ansible-playbook` command below.
