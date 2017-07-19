@@ -63,4 +63,6 @@ oc project logging
 oadm policy add-cluster-role-to-user cluster-admin admin
 oc get pods
 
-MUX_HOST=mux.$hostname $HOME/ViaQ/setup-mux.sh
+if [ -x $HOME/ViaQ/setup-mux.sh ] ; then
+    MUX_HOST=mux.$hostname $HOME/ViaQ/setup-mux.sh
+fi

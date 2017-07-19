@@ -7,15 +7,10 @@ Intro
 ViaQ Logging is based on the [OpenShift
 Logging](https://github.com/openshift/origin-aggregated-logging) stack.  You
 can use either the OpenShift Container Platform (OCP) based on RHEL7, or
-OpenShift Origin (Origin) based on CentOS7.
-
-The component which uses the secure_forward listener in OpenShift is called
-*mux*, short for multiplex, because it acts like a multiplexor or manifold,
-taking in connections from many collectors, and distributing them to a data
-store.  Another term would be FEAN, short for
-Forward/Enrich/Aggregate/Normalize.
-
-This document uses the term *mux* to refer to this component.
+OpenShift Origin (Origin) based on CentOS7.  Ansible is used to install logging
+using the [OpenShift Ansible](https://github.com/openshift/openshift-ansible)
+logging
+[roles](https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_logging/README.md).
 
 Provisioning a machine to run ViaQ
 ----------------------------------
@@ -27,20 +22,23 @@ Provisioning a machine to run ViaQ
 
 ViaQ on OCP requires a RHEL 7.3 or later machine.  ViaQ on Origin requires a
 up-to-date CentOS 7 machine.  You must be able to ssh into the machine using an
-ssh keypair.  This means you will need to:
+ssh keypair.  The instructions below assume you are running ansible on the same
+machine that you are going to be using to run logging (as an all-in-one or aio
+deployment).  You will need to do the following on this machine:
 
 * assign the machine an FQDN and IP address so that it can be reached from
   another machine - these are the **public_hostname** and **public_ip**
 * use `root` (or create a user account) - this user will be referred to below
   as `$USER`
 * provide an ssh pubkey for this user account (`ssh-keygen`)
-* add the ssh pubkey to the user account `$USER/.ssh/authorized_keys`
-  * `cat $USER/.ssh/id_rsa.pub >> $USER/.ssh/authorized_keys`
+* add the ssh pubkey to the user account `$HOME/.ssh/authorized_keys`
+  * `cat $HOME/.ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys`
 * add the ssh hostkey for localhost to your SSH `known_hosts`
-  * `ssh-keyscan -H localhost >> $USER/.ssh/known_hosts`
+  * `ssh-keyscan -H localhost >> $HOME/.ssh/known_hosts`
 * add the ssh hostkey for **public_hostname** to your SSH `known_hosts`
-  * `ssh-keyscan -H **public_hostname** >> $USER/.ssh/known_hosts`
-* if not using root, enable passwordless sudo e.g. in sudoers config:
+  * `ssh-keyscan -H **public_hostname** >> $HOME/.ssh/known_hosts`
+* This step is only needed if not using root - enable passwordless sudo e.g. in
+  sudoers config:
   * `$USER ALL=(ALL) NOPASSWD:ALL`
 * allow connections on the following ports/protocols:
   * icmp (for ping)
@@ -98,32 +96,26 @@ openshift-ansible-roles
       openshift-ansible-lookup-plugins openshift-ansible-playbooks \
       openshift-ansible-roles
 
-If the 3.5/1.5 versions of these packages are not available, you can use the
+If the 3.6 version of these packages are not available, you can use the
 git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-1.5` branch:
+`release-3.6` branch:
 
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-1.5
+    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.6
 
 You will need to use the `ansible-playbook` command with an Ansible inventory
 file and a `vars.yaml` file.  You should not have to edit the inventory file.
 All customization can be done via the `vars.yaml` file.
 
 Download the files [vars.yaml.template](vars.yaml.template) and
-[ansible-inventory-origin-15-aio](ansible-inventory-origin-15-aio)
+[ansible-inventory-origin-36-aio](ansible-inventory-origin-36-aio)
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-15-aio > ansible-inventory
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-35-aio](ansible-inventory-ocp-35-aio) file:
+[ansible-inventory-ocp-36-aio](ansible-inventory-ocp-36-aio) file:
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-35-aio > ansible-inventory
-    
-There is currently a bug in openshift-ansible 1.5 [cert_ext bug](https://github.com/openshift/openshift-ansible/pull/4019) which requires the following patch:
-
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/0001-Compatibility-updates-to-openshift_logging-role-for-.patch > 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
-    # cd /usr/share/ansible/openshift-ansible/
-    # patch -p1 -b < 0001-Compatibility-updates-to-openshift_logging-role-for-.patch
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-36-aio > ansible-inventory
     
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
@@ -158,6 +150,13 @@ determine using ansible, you may need to change the following fields in
   passwordless ssh
 * `ansible_become` - use `no` if `ansible_ssh_user` is `root`, otherwise,
   use `yes`
+* `openshift_logging_mux_namespaces` - **REQUIRED** Represents the environment
+  name that you are sending logs from.  It is a list (ansible/yaml list format)
+  namespaces, to create in mux for your logs. Only users who are members of
+  those namespaces can view those logs.  **NOTE POSSIBLE LOSS OF DATA**  Data
+  tagged with `project.namespace.*` WILL BE LOST if `namespace` does not exist,
+  so make sure any such namespaces are specified in
+  `openshift_logging_mux_namespaces`
 * `openshift_public_hostname` - this is the **public_hostname** value mentioned
   above which should have been assigned during the provisioning of the
   machine.  This must be an FQDN, and must be accessible from another machine.
@@ -187,8 +186,22 @@ determine using ansible, you may need to change the following fields in
   OpenShift UI access - you can usually use the default value
 * `openshift_logging_kibana_hostname` - this is the public hostname for Kibana
   browser access - you can usually use the default value
+* `openshift_logging_mux_hostname` - this is the public hostname for mux
+  secure_forward access - you can usually use the default value
+* `openshift_logging_es_hostname` - this is the public hostname for
+  Elasticsearch direct API access - you can usually use the default value
 
-You can also override variables in the inventory by setting them in `vars.yaml`.
+You can also override variables in the inventory by setting them in
+`vars.yaml`.
+
+**NOTE:** Log records sent to mux, which are not tagged in the form
+`project.namespace`, will go into the `mux-undefined` namespace, and will be
+available via Elasticsearch/Kibana using an index pattern of
+`project.mux-undefined.*`.
+
+See
+[mux-logging-service.md](https://github.com/openshift/origin-aggregated-logging/blob/master/docs/mux-logging-service.md)
+for a description about how mux detects and separates logs into namespaces.
 
 ### Note about hostnames and IP addresses in this document ###
 
@@ -228,42 +241,27 @@ hangs, just kill it and run it again - Ansible is (mostly) idempotent.  Same
 applies if there are any errors during the run - fix the machine and/or the
 `vars.yaml` and run it again.
 
+### Post-Install Checking ###
+
 To confirm that OpenShift and logging are working:
 
     # oc project logging
     # oc get pods
 
-You should see the Elasticsearch, Curator, Kibana, and Fluentd pods running.
-
-Configuring mux
----------------
-
-You will need a publicly accessible hostname to access the mux.  You can use a
-hostname alias in `/etc/hosts` as described above in
-[Installing](#installing-viaq).  By default, the mux hostname is
-mux.`openshift_master_default_subdomain`
-
-    10.16.19.171 openshift.logging.test kibana.logging.test mux.logging.test
-
-Download the [setup-mux.sh](setup-mux.sh) script.
-
-`MUX_HOST` parameter - The FQDN you will use to access mux externally, and will also be used in the mux TLS server cert subject DN.
-
-`MUX_NAMESPACES` parameter - Represents the environment name that you are sending logs from.
-It is a list of space-delimited namespaces, to create in mux for your logs. Only users who are members of those namespaces can view those logs.
-
-See [mux-logging-service.md](https://github.com/openshift/origin-aggregated-logging/blob/master/docs/mux-logging-service.md) for a description about how mux detects and separates logs into namespaces.
-
-**Note:** If you do not use `MUX_NAMESPACES`, your logs they will go into the `mux-undefined` namespace.
-
-Update the `MUX_HOST` and `MUX_NAMESPACES` below and run the following commands:
+You should see the Elasticsearch, Curator, Kibana, Fluentd, and mux pods
+running.
 
     # oc project logging
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/setup-mux.sh > setup-mux.sh
-    # chmod +x setup-mux.sh
-    # MUX_HOST=mux.logging.test MUX_NAMESPACES="my-first-namespace my-other-ns" ./setup-mux.sh
+    # oc get svc
 
-This will create the `logging-mux` configmap, secrets, dc, pod, and service.
+You should see services for Elasticsearch, Kibana, and mux.
+
+    # oc project logging
+    # oc get routes
+
+You should see routes for Elasticsearch and Kibana.
+
+You should have a `logging-mux` configmap, secrets, dc, pod, and service.
 
     # oc get pods -l component=mux
     NAME                  READY     STATUS    RESTARTS   AGE
@@ -272,22 +270,10 @@ This will create the `logging-mux` configmap, secrets, dc, pod, and service.
     NAME          CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
     logging-mux   172.30.215.88   10.0.0.3      24284/TCP   1h
 
-mux also creates a `TCP JSON` listener.  *THIS IS INSECURE - USE WITH
-CAUTION*.  By default it listens to port `23456`.  You can use this for testing
-clients that do not support fluentd secure_forward.  e.g.
-
-    $ echo '{"hello":"world","@timestamp":"2017-05-23T21:27:52.554908+00:00"}' | \
-      nc --send-only 192.168.122.4 23456
-
 The externalIP value should be the IP address of your `eth0` interface, or
-whichever interface on the machine is used for external egress.  The script
-should automatically determine this.  If it is unable to, specify it with
-the environment variable `MUX_PUBLIC_IP`:
-
-    # MUX_HOST=mux.logging.test MUX_PUBLIC_IP=192.168.122.4 \
-      MUX_NAMESPACES="my-first-namespace my-other-ns" ./setup-mux.sh
-
-You can test with `openssl s_client` like this:
+whichever interface on the machine is used for external egress, that you
+configured with the `openshift_ip` in Ansible.  You can test with `openssl
+s_client` like this:
 
     # echo hello | openssl s_client -quiet -connect localhost:24284
     depth=1 CN = openshift-signer@1480618407
@@ -299,7 +285,7 @@ You can test with `openssl s_client` like this:
 If you get something that looks like this: `Connection refused connect:errno=111`
 Try this:
 
-    # netstat -nlt|grep 24284
+    # netstat -nlt | grep 24284
 
 It should show mux listening to port 24284 on some IP address:
 
@@ -310,15 +296,7 @@ Try `echo hello | openssl s_client -quiet -connect 10.16.19.171:24284`, or try
 Fluentd secure_forward listener.  Don't worry about the garbage characters and
 invalid message.
 
-There is a test script [test-mux.sh](test-mux.sh) you can use to test that the
-mux is working.  It will reconfigure the regular OpenShift Fluentd to send its
-logs to the mux instead of to Elasticsearch directly, and then add some log
-messages to see if the mux sends them to Elasticsearch.
-
-    # oc project logging
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/test-mux.sh > test-mux.sh
-    # chmod +x test-mux.sh
-    # MUX_HOST=mux.logging.test ./test-mux.sh
+### Test Elasticsearch ###
 
 To search Elasticsearch, first get the name of the Elasticsearch pod:
 
@@ -392,21 +370,20 @@ Getting the shared_key and CA cert
 
 In order to configure the client side of Fluentd secure_forward, you will need
 the values for the `shared_key` and the `ca_cert_path`.  For the first
-iteration, you will just use the ones generated by the `setup-mux.sh` script.
+iteration, you will just use the ones generated by the ansible install.
 
     # oc project logging
-    # oc get secret logging-mux --template='{{index .data "mux-ca"}}' | base64 -d > mux-ca.crt
+    # oc get secret logging-mux --template='{{index .data "ca"}}' | base64 -d > mux-ca.crt
     # openssl x509 -in mux-ca.crt -text | more
     Certificate:
     ...
         Subject: CN=openshift-signer@1480618407
     ...
-    # oc get secret logging-mux --template='{{index .data "mux-shared-key"}}' | \
+    # oc get secret logging-mux --template='{{index .data "shared_key"}}' | \
       base64 -d > mux-shared-key
 
 Use the `mux-ca.crt` and `mux-shared-key` to configure the Fluent
-secure_forward clients.  The `setup-mux.sh` script will generate these for you,
-but use the above instructions if you need to regenerate them.
+secure_forward clients.
 
 Client side setup
 -----------------
@@ -436,21 +413,6 @@ The client side setup should look something like this:
         port 24284
       </server>
     </match>
-
-Rsyslog Client side setup
--------------------------
-
-Assuming you have a template `viaq-json-format` that will format your records
-using a ViaQ JSON format, and `mux` is configured to use the `TCP JSON`
-listener, you can output your records using something like the
-following:
-
-    module(load="builtin:omfwd")
-    action(type="omfwd"
-           target="mux.logging.test"
-           port="23456"
-           protocol="tcp"
-           template="viaq-json-format")
 
 Running Kibana
 --------------
