@@ -239,16 +239,18 @@ mux.`openshift_master_default_subdomain`
 
     10.16.19.171 openshift.logging.test kibana.logging.test mux.logging.test
 
-Download and run the [setup-mux.sh](setup-mux.sh) script.  The only required
-parameter is `MUX_HOST` which is the FQDN you will use to access mux
-externally, and will also be used in the mux TLS server cert subject DN.  The
-`MUX_NAMESPACES` parameter is used to pass in a list of space-delimited
-namespaces to create in mux for your logs.  See
-[mux-logging-service.md](https://github.com/openshift/origin-aggregated-logging/blob/master/docs/mux-logging-service.md)
-for a description about how mux detects and separates logs into
-namespaces. Basically, you can specify a namespace for your logs, and only
-users who are members of those namespaces can view those logs.  If you do not
-use `MUX_NAMESPACES` your logs will go into the `mux-undefined` namespace.
+Download the [setup-mux.sh](setup-mux.sh) script.
+
+`MUX_HOST` parameter - The FQDN you will use to access mux externally, and will also be used in the mux TLS server cert subject DN.
+
+`MUX_NAMESPACES` parameter - Represents the environment name that you are sending logs from.
+It is a list of space-delimited namespaces, to create in mux for your logs. Only users who are members of those namespaces can view those logs.
+
+See [mux-logging-service.md](https://github.com/openshift/origin-aggregated-logging/blob/master/docs/mux-logging-service.md) for a description about how mux detects and separates logs into namespaces.
+
+**Note:** If you do not use `MUX_NAMESPACES`, your logs they will go into the `mux-undefined` namespace.
+
+Update the `MUX_HOST` and `MUX_NAMESPACES` below and run the following commands:
 
     # oc project logging
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/setup-mux.sh > setup-mux.sh
