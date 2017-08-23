@@ -1,0 +1,6 @@
+[centos-openshift-origin-15]
+name=CentOS 7 - OpenShift Origin 1.5
+baseurl=http://mirror.centos.org/centos/7/paas/x86_64/openshift-origin15/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-PaaS
