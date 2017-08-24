@@ -26,3 +26,6 @@ openshift_logging_master_public_url: https://{{ openshift_public_hostname }}:844
 
 # the public hostname for Kibana browser access
 openshift_logging_kibana_hostname: kibana.{{ openshift_master_default_subdomain }}
+
+# the openshift version to be installed
+# openshift_pkg_version: "-1.5.0"
