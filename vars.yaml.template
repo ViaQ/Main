@@ -26,3 +26,6 @@ openshift_logging_master_public_url: https://{{ openshift_public_hostname }}:844
 
 # the public hostname for Kibana browser access
 openshift_logging_kibana_hostname: kibana.{{ openshift_master_default_subdomain }}
+
+# Enable the following line to install in a VM with little resources. (not for production)
+# openshift_disable_check: disk_availability,docker_storage,memory_availability
