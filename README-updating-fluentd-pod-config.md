@@ -1,7 +1,7 @@
 ###  Updating Fluentd Pod Config in ViaQ  ###
 
 This information is based on having a VM with [OpenShift Logging](https://github.com/openshift/origin-aggregated-logging) stack ViaQ (EFK) as described in:
-https://github.com/ViaQ/Main/blob/master/README-mux.md
+https://github.com/ViaQ/Main/blob/master/README-install.md
 
 All the logs from journald get sent to fluentd.
 Fluentd is throttled and may lose logs if in a storm, but all the logs shall get processed under normal circumstances.
