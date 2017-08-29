@@ -20,7 +20,6 @@ ssh-keygen -q -N "" -f /root/.ssh/id_rsa
 popd
 
 hostname=`hostname`
-OPENSHIFT_PRIVATE_IP=${OPENSHIFT_PRIVATE_IP:-`getent ahostsv4 $hostname|awk "/$hostname/ "'{print $1}'`}
 INVENTORY_SOURCE=${INVENTORY_SOURCE:-$1}
 INVENTORY=${INVENTORY:-ansible.inventory}
 VARS=${VARS:-vars.yaml}
@@ -39,19 +38,9 @@ fi
 # Are you sure you want to continue connecting (yes/no)?
 # prompt
 ssh-keyscan -H $hostname >> /root/.ssh/known_hosts
+ssh-keyscan -H localhost >> /root/.ssh/known_hosts
 
-# create vars.yaml file
-cat > $HOME/ViaQ/vars.yaml <<EOF
-ansible_ssh_user: root
-ansible_become: false
-openshift_master_default_subdomain: $hostname
-openshift_public_ip: $OPENSHIFT_PRIVATE_IP
-openshift_ip: $OPENSHIFT_PRIVATE_IP
-openshift_public_hostname: $hostname
-openshift_hostname: $hostname
-openshift_hosted_logging_master_public_url: https://${hostname}:8443
-openshift_hosted_logging_hostname: kibana.{{ openshift_public_hostname }}
-EOF
+cp $HOME/ViaQ/vars.yaml.template $HOME/ViaQ/vars.yaml
 cp $HOME/ViaQ/$INVENTORY_SOURCE $HOME/ViaQ/$INVENTORY
 # run ansible
 cd $OPENSHIFT_ANSIBLE_DIR
@@ -60,6 +49,11 @@ cd $OPENSHIFT_ANSIBLE_DIR
 setenforce Permissive
 # ^^^ HACK HACK HACK
 
+for file in $HOME/ViaQ/*.patch ; do
+    if [ -f "$file" ] ; then
+        patch -p1 -b < $file
+    fi
+done
 ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv -e @$HOME/ViaQ/$VARS -i $HOME/ViaQ/$INVENTORY playbooks/byo/config.yml
 
 oc project logging
@@ -69,4 +63,6 @@ oc project logging
 oadm policy add-cluster-role-to-user cluster-admin admin
 oc get pods
 
-MUX_HOST=mux.$hostname $HOME/ViaQ/setup-mux.sh
+if [ -x $HOME/ViaQ/setup-mux.sh ] ; then
+    MUX_HOST=mux.$hostname $HOME/ViaQ/setup-mux.sh
+fi
