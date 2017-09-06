@@ -64,7 +64,13 @@ For RHEL, you must enable the Extras and the rhel-7-fast-datapath-rpms channels
 (for docker and ovs, among others).
 
 ViaQ on Origin requires these [Yum Repos](centos7-viaq.repo).
-You will need to install the following packages: docker iptables-services
+You will need to install the following packages: docker, iptables-services &
+NetworkManager.
+
+You'll also need to enable and start NetworkManager:
+
+    systemctl enable NetworkManager
+    systemctl start NetworkManager
 
 You will need to configure sudo to not require a tty.  For example, create a
 file like `/etc/sudoers.d/999-cloud-init-requiretty` with the following contents:
