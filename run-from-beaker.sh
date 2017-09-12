@@ -28,7 +28,7 @@ ANSIBLE_LOCAL="-c local"
 
 if [ -n "${OPENSHIFT_ANSIBLE_REPO:-}" ] ; then
     cd /root
-    git clone https://github.com/$OPENSHIFT_ANSIBLE_REPO/openshift-ansible ${OPENSHIFT_ANSIBLE_BRANCH:+-b $OPENSHIFT_ANSIBLE_BRANCH} $HOME
+    git clone https://github.com/$OPENSHIFT_ANSIBLE_REPO/openshift-ansible ${OPENSHIFT_ANSIBLE_BRANCH:+-b $OPENSHIFT_ANSIBLE_BRANCH} $HOME/openshift-ansible
     OPENSHIFT_ANSIBLE_DIR=$HOME/openshift-ansible
 else
     OPENSHIFT_ANSIBLE_DIR=${OPENSHIFT_ANSIBLE_DIR:-/usr/share/ansible/openshift-ansible}
@@ -45,15 +45,34 @@ cp $HOME/ViaQ/$INVENTORY_SOURCE $HOME/ViaQ/$INVENTORY
 # run ansible
 cd $OPENSHIFT_ANSIBLE_DIR
 
-# vvv HACK HACK HACK
-setenforce Permissive
-# ^^^ HACK HACK HACK
-
 for file in $HOME/ViaQ/*.patch ; do
     if [ -f "$file" ] ; then
         patch -p1 -b < $file
     fi
 done
+
+needpath=
+if grep -q -i \^openshift_logging_elasticsearch_storage_type=hostmount $HOME/ViaQ/$INVENTORY ; then
+    path=$( awk -F'[ =]+' '/^openshift_logging_elasticsearch_hostmount_path/ {print $2}' $HOME/ViaQ/$INVENTORY )
+    needpath=1
+elif grep -q -i "^openshift_logging_elasticsearch_storage_type: hostmount" $HOME/ViaQ/$VARS ; then
+    path=$( awk -F'[ :]+' '/^openshift_logging_elasticsearch_hostmount_path/ {print $2}' $HOME/ViaQ/$VARS )
+    needpath=1
+fi
+
+if [ -n "$needpath" -a -z "${path:-}" ] ; then
+    echo Error: storage type is hostmount but no openshift_logging_elasticsearch_hostmount_path was specified
+    exit 1
+elif [ -n "$needpath" ] ; then
+    if [ ! -d $path ] ; then
+        mkdir -p $path
+    fi
+    chown 0:65534 $path
+    chmod g+w $path
+    semanage fcontext -a -t svirt_sandbox_file_t "$path(/.*)?"
+    restorecon -R -v $path
+fi
+
 ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv -e @$HOME/ViaQ/$VARS -i $HOME/ViaQ/$INVENTORY playbooks/byo/config.yml
 
 oc project logging

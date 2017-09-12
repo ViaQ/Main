@@ -78,6 +78,63 @@ file like `/etc/sudoers.d/999-cloud-init-requiretty` with the following contents
     # cat /etc/sudoers.d/999-cloud-init-requiretty
     Defaults !requiretty
 
+Persistent Storage
+------------------
+
+**NOTE** You currently cannot have two mux pods running on the same host at the
+  same time when both are using persistent storage.  If you set
+  `openshift_logging_mux_replicas` to be greater than 1, you must also disable
+  persistent storage for mux:
+  `openshift_logging_mux_file_buffer_storage_type: "emptydir"`
+  See [BZ 1489410](https://bugzilla.redhat.com/show_bug.cgi?id=1489410)
+
+Elasticsearch, Fluentd, and mux all require persistent storage - Elasticsearch
+for the database, and Fluentd and mux for the file buffering.  Fluentd and mux
+will use the host paths `/var/lib/fluentd` and `/var/log/fluentd`,
+respectively, by default.  Inside the pods, these are mounted at
+`/var/lib/fluentd`.  The disk space usage for Fluentd and mux will depend on
+how fast mux and Elasticsearch can process and ingest the logs.  Fluentd uses
+the `vars.yaml` (see below) parameter
+`openshift_logging_fluentd_file_buffer_limit` (default `1Gi` for 1 Gigabyte) to
+control the size of the file buffer, and mux uses
+`openshift_logging_mux_file_buffer_limit` (default `2Gi` for 2 Gigabytes).
+This amount of disk space in the `/var` partition is usually not a problem, but
+if you plan to run on a system with reduced disk space, you should make sure
+that `/var` has enough to accomodate this.  The buffer file limit is per output
+plugin, so if you have enabled the separate `ops` cluster, or are copying logs
+off of the cluster using `secure_forward`, this will increase the disk space
+usage.
+
+Elasticsearch uses ephemeral storage by default, and so has to be manually
+configured to use persistence.
+
+- First, since Elasticsearch can use many GB of disk space, and may fill up the
+  partition, you are strongly recommended to use a partition other than root
+  `/` to avoid filling up the root partition.
+- Find a partition that can easily accomodate many GB of storage.
+- Create the directory e.g. `mkdir -p /var/lib/elasticsearch`
+- Change the group ownership to the value of your
+  `openshift_logging_elasticsearch_storage_group` parameter (default `65534`)
+  e.g. `chgrp 65534 /var/lib/elasticsearch`
+- make this directory writable by the group `chmod -R g+w /var/lib/elasticsearch`
+- add the following selinux policy:
+
+        semanage fcontext -a -t svirt_sandbox_file_t "/var/lib/elasticsearch(/.*)?"
+        restorecon -R -v /var/lib/elasticsearch
+
+Then run ViaQ installation.  The installation of Elasticsearch will fail
+because there is currently no way to grant the Elasticsearch service account
+permission to mount that directory.  After installation is complete, do the
+following steps to enable Elasticsearch to mount the directory:
+
+    $ oc project logging
+    $ oadm policy add-scc-to-user hostmount-anyuid \
+      system:serviceaccount:logging:aggregated-logging-elasticsearch
+    $ oc get dc # find the ones named logging-es-.....
+    $ oc rollout cancel dc/logging-es-.....
+    $ oc rollout latest dc/logging-es-.....
+    $ oc rollout status -w dc/logging-es-.....
+
 Installing ViaQ
 ---------------
 
@@ -119,7 +176,8 @@ Download the files [vars.yaml.template](vars.yaml.template) and
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-36-aio](ansible-inventory-ocp-36-aio) file:
+[ansible-inventory-ocp-36-aio](ansible-inventory-ocp-36-aio) file instead
+of the origin-36-aio file (you still need vars.yaml.template):
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-36-aio > ansible-inventory
     
