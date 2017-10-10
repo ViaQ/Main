@@ -21,6 +21,6 @@ gpgkey=https://tdawson.fedorapeople.org/centos/RPM-GPG-KEY-CentOS-SIG-PaaS
 [centos-openshift-origin15-candidate]
 name=CentOS OpenShift Origin15 Candidate
 baseurl=http://cbs.centos.org/repos/paas7-openshift-origin15-candidate/x86_64/os/
-enabled=1
+enabled=0
 gpgcheck=0
 gpgkey=https://tdawson.fedorapeople.org/centos/RPM-GPG-KEY-CentOS-SIG-PaaS
