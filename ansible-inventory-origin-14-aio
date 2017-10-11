@@ -26,6 +26,8 @@ openshift_hosted_logging_image_version=v1.4.1
 osm_use_cockpit=False
 ansible_become=no
 deployment_type=origin
+# this will install and enable the x.y for the latest, so turn this off
+openshift_enable_origin_repo=False
 
 [nodes]
 localhost storage=True openshift_node_labels="{'region': 'infra'}" openshift_schedulable=True

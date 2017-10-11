@@ -28,7 +28,7 @@ ANSIBLE_LOCAL="-c local"
 
 if [ -n "${OPENSHIFT_ANSIBLE_REPO:-}" ] ; then
     cd /root
-    git clone https://github.com/$OPENSHIFT_ANSIBLE_REPO/openshift-ansible ${OPENSHIFT_ANSIBLE_BRANCH:+-b $OPENSHIFT_ANSIBLE_BRANCH} $HOME
+    git clone https://github.com/$OPENSHIFT_ANSIBLE_REPO/openshift-ansible ${OPENSHIFT_ANSIBLE_BRANCH:+-b $OPENSHIFT_ANSIBLE_BRANCH} $HOME/openshift-ansible
     OPENSHIFT_ANSIBLE_DIR=$HOME/openshift-ansible
 else
     OPENSHIFT_ANSIBLE_DIR=${OPENSHIFT_ANSIBLE_DIR:-/usr/share/ansible/openshift-ansible}
