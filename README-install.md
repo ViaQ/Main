@@ -141,12 +141,11 @@ Installing ViaQ
 These instructions and config files are for an all-in-one, single machine, run
 ansible on the same machine you are installing ViaQ on.
 
-*NOTE* *THIS IS NOT FOR PRODUCTION USE*
-
-The setup below is for a developer or demo machine, all-in-one, running
+The setup below is for a an all-in-one machine, running
 Ansible in *local* mode to install ViaQ on the same machine as Ansible is
-running on.  It also configures the `AllowAllPasswordIdentityProvider` which
-means anyone can log in using the OpenShift UI.
+running on.  It also configures the `AllowAllPasswordIdentityProvider` with
+`mappingMethod: lookup`, which means the administrator will need to manually
+create users.  See below for more information about users.
 
 Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.
 The following packages are required: openshift-ansible
@@ -481,20 +480,55 @@ The client side setup should look something like this:
 Running Kibana
 --------------
 
-You will first need to create an OpenShift user and assign this user rights to
-view the application and operations logs.  The install above uses the
-AllowAllPasswordIdentityProvider which makes it easy to create test users like
-this:
+You will first need to create an OpenShift user and assign this user
+rights to view the application and operations logs.  The install above
+uses the `AllowAllPasswordIdentityProvider` with `mappingMethod: lookup`.
+You will need to manually create users to allow access to Kibana.
+See [OpenShift Authentication Docs](https://docs.openshift.org/3.6/install_config/configuring_authentication.html#LookupMappingMethod)
+for more information.
+To create an admin user:
 
     # oc project logging
+    # oc create user admin
+    # oc create identity allow_all:admin
+    # oc create useridentitymapping allow_all:admin admin
+    # oadm policy add-cluster-role-to-user cluster-admin admin
+
+This will create the user account.  The password is set when at the
+first login.  To set the password now:
+
     # oc login --username=admin --password=admin
     # oc login --username=system:admin
-    # oadm policy add-cluster-role-to-user cluster-admin admin
 
 Now you can use the `admin` username and password to access Kibana.  Just
 point your web browser at `https://kibana.logging.test` where the
 `logging.test` part is whatever you specified in the 
 `openshift_master_default_subdomain` parameter in the `vars.yaml` file.
+
+To create an "normal" user that can only view logs in a particular set of
+projects, follow the steps above, except do not assign the `cluster-admin`
+role, use the following instead:
+
+    # oc project $namespace
+    # oadm policy add-role-to-user view $username
+
+Where `$username` is the name of the user you created instead of `admin`,
+and `$namespace` is the name of the project or namespace you wish to allow
+the user to have access to the logs of.  For example, to create a user
+named `loguser` that can view logs in `ovirt-metrics-engine`:
+
+    # oc create user loguser
+    # oc create identity allow_all:loguser
+    # oc create useridentitymapping allow_all:loguser loguser
+    # oc project ovirt-metrics-engine
+    # oadm policy add-role-to-user view loguser
+
+and to assign the password immediately instead of waiting for the user
+to login:
+
+    # oc login --username=loguser --password=loguser
+    # oc login --username=system:admin
+
 
 ## Appendix 1 CentOS7 ViaQ yum repos
 
