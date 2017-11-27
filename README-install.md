@@ -165,30 +165,30 @@ Only users who are members of those namespaces can view those logs.
 **NOTE POSSIBLE LOSS OF DATA** Data tagged with project.namespace.* WILL BE LOST if namespace does not exist,
 so make sure any such namespaces are specified in openshift_logging_mux_namespaces
 
-4. Run Ansible to verify whether the default value for  public_hostname is correct, and if not update it.  
+4. Run Ansible to verify whether the default value for `openshift_public_hostname` is correct, and if not update it.  
 
         # ansible -m setup localhost -a 'filter=ansible_fqdn'
 
 to see if ansible correctly reports your host's FQDN, as defined in Configuring Ansible Prerequisites.
-If it is different, edit the value of openshift_public_hostname to match the public_hostname.
+If it is different, edit the value of `openshift_public_hostname` to match the public hostname returned by
+this command.
 
-5. Run Ansible to verify whether the default value for and public_ip matches
+5. Run Ansible to verify whether the default value for `openshift_public_ip` matches
 the value you defined in Configuring Ansible Prerequisites.
 
         # ansible -m setup localhost -a 'filter=ansible_default_ipv4'
 
-Check that the address field, matches public_ip.
+Check that the address field matches `openshift_public_ip`.
 Now ensure that you receive the same IP address that is used for external use by running:
 
         # ip -4 route get 8.8.8.8
 
-
 You will receive an output similar to the following, where 10.10.10.10 is the IP address.
-8.8.8.8 via 10.0.0.1 dev enp0s25 src 10.10.10.10 uid 1000
 
+    8.8.8.8 via 10.0.0.1 dev enp0s25 src 10.10.10.10 uid 1000
 
-If the result of these two tests match, but the IP is different from the value defined in public_ip,
-edit the value of openshift_public_ip to match the public_ip. 
+If the result of these two tests match, but the IP is different from the value defined in `openshift_public_ip`,
+edit the value of `openshift_public_ip` to match the value from the tests. 
 This is the IP address that will be used from other machines to connect to this machine.
 It will typically be used in your DNS, /etc/hosts.
 This may be the same as the eth0 IP address of the machine,
