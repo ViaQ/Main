@@ -78,12 +78,9 @@ file like `/etc/sudoers.d/999-cloud-init-requiretty` with the following contents
 Persistent Storage
 ------------------
 
-Elasticsearch and Fluentd require persistent storage for the database.
-Inside the pods, these are mounted at
-`/var/lib/fluentd`.
-Do not run this with reduced disk space, pre-allocated the required disk space to the partition
-that you plan to use for the persistent storage.
-We recommand 500GB ssd disk, for 50 about hosts.
+Elasticsearch requires persistent storage for its database.
+
+We recommand 500GB SSD per 50 hosts.
 
 Elasticsearch uses ephemeral storage by default, and so has to be manually
 configured to use persistence.
