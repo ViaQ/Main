@@ -67,13 +67,13 @@ For RHEL, you must enable the Extras and the rhel-7-fast-datapath-rpms channels
 ViaQ on Origin requires these [Yum Repos](centos7-viaq.repo).
 You will need to install the following packages: docker, iptables-services.
 
-    # yum install docker iptables-services
+        # yum install docker iptables-services
 
 You will need to configure sudo to not require a tty.  For example, create a
 file like `/etc/sudoers.d/999-cloud-init-requiretty` with the following contents:
 
-    # cat /etc/sudoers.d/999-cloud-init-requiretty
-    Defaults !requiretty
+        # cat /etc/sudoers.d/999-cloud-init-requiretty
+        Defaults !requiretty
 
 Persistent Storage
 ------------------
@@ -119,16 +119,16 @@ openshift-ansible-callback-plugins openshift-ansible-filter-plugins
 openshift-ansible-lookup-plugins openshift-ansible-playbooks
 openshift-ansible-roles
 
-    # yum install openshift-ansible \
-      openshift-ansible-callback-plugins openshift-ansible-filter-plugins \
-      openshift-ansible-lookup-plugins openshift-ansible-playbooks \
-      openshift-ansible-roles
+        # yum install openshift-ansible \
+          openshift-ansible-callback-plugins openshift-ansible-filter-plugins \
+          openshift-ansible-lookup-plugins openshift-ansible-playbooks \
+          openshift-ansible-roles
 
 If the 3.6 version of these packages are not available, you can use the
 git repo `https://github.com/openshift/openshift-ansible.git` and the
 `release-3.6` branch:
 
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.6
+        # git clone https://github.com/openshift/openshift-ansible.git -b release-3.6
 
 ### Customizing vars.yaml
 
@@ -141,14 +141,14 @@ and which parameters you may want to customize, depending on your environment.
 1. Download the files [vars.yaml.template](vars.yaml.template) and
 [ansible-inventory-origin-36-aio](ansible-inventory-origin-36-aio)
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
+        # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
+        # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
 [ansible-inventory-ocp-36-aio](ansible-inventory-ocp-36-aio) file instead
 of the origin-36-aio file (you still need vars.yaml.template):
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-36-aio > ansible-inventory
+        # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-36-aio > ansible-inventory
     
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
@@ -260,11 +260,11 @@ public IP address.
 
 1. Run ansible:
 
-    # cd /usr/share/ansible/openshift-ansible
-    # (or wherever you cloned the git repo if using git)
-    # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
-      -e @/path/to/vars.yaml \
-      -i /path/to/ansible-inventory playbooks/byo/config.yml
+        # cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
+          -e @/path/to/vars.yaml \
+          -i /path/to/ansible-inventory playbooks/byo/config.yml
 
 where `/path/to/vars.yaml` is the full path and file name where you saved your
 `vars.yaml` file, and `/path/to/ansible-inventory` is the full path and file
@@ -282,6 +282,7 @@ Enabling Elasticsearch to Mount the Directory
 The installation of Elasticsearch will fail because there is currently no way to grant
 the Elasticsearch service account permission to mount that directory.
 After installation is complete, do the following steps to enable Elasticsearch to mount the directory:
+        
         # oc project logging
         # oadm policy add-scc-to-user hostmount-anyuid \
           system:serviceaccount:logging:aggregated-logging-elasticsearch
@@ -326,20 +327,18 @@ https://github.com/openshift/origin-aggregated-logging/tree/master/hack/kopf
 
 1. To confirm that Elasticsearch, Curator, Kibana, and Fluentd pods are running, run:
 
-    # oc project logging
-    # oc get pods
+        # oc project logging
+        # oc get pods
 
 2. To confirm that the Elasticsearch and Kibana services are running, run:
 
-    # oc project logging
-    # oc get svc
+        # oc project logging
+        # oc get svc
 
 3. To confirm that there are routes for Elasticsearch and Kibana, run:
 
-
-    # oc project logging
-    # oc get routes
-
+        # oc project logging
+        # oc get routes
 
 ### Test Elasticsearch ###
 
@@ -443,25 +442,25 @@ To create an "normal" user that can only view logs in a particular set of
 projects, follow the steps above, except do not assign the `cluster-admin`
 role, use the following instead:
 
-    # oc project $namespace
-    # oadm policy add-role-to-user view $username
+        # oc project $namespace
+        # oadm policy add-role-to-user view $username
 
 Where `$username` is the name of the user you created instead of `admin`,
 and `$namespace` is the name of the project or namespace you wish to allow
 the user to have access to the logs of.  For example, to create a user
 named `loguser` that can view logs in `ovirt-metrics-engine`:
 
-    # oc create user loguser
-    # oc create identity allow_all:loguser
-    # oc create useridentitymapping allow_all:loguser loguser
-    # oc project ovirt-metrics-engine
-    # oadm policy add-role-to-user view loguser
+        # oc create user loguser
+        # oc create identity allow_all:loguser
+        # oc create useridentitymapping allow_all:loguser loguser
+        # oc project ovirt-metrics-engine
+        # oadm policy add-role-to-user view loguser
 
 and to assign the password immediately instead of waiting for the user
 to login:
 
-    # oc login --username=loguser --password=loguser
-    # oc login --username=system:admin
+        # oc login --username=loguser --password=loguser
+        # oc login --username=system:admin
 
 
 ## Appendix 1 CentOS7 ViaQ yum repos
