@@ -303,7 +303,7 @@ Edit the Elasticsearch service definition to add an external IP using the opensh
 
 spec:
   clusterIP: 172.xx.yy.zz
-  externalIP:
+  externalIPs:
   -  <openshift_public_ip>
 
 3. Save the file and exit.  The changes will take effect immediately.
