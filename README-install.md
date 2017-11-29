@@ -119,6 +119,8 @@ openshift-ansible-callback-plugins openshift-ansible-filter-plugins
 openshift-ansible-lookup-plugins openshift-ansible-playbooks
 openshift-ansible-roles
 
+Please add the repository [centos7-viaq.repo](https://github.com/ViaQ/Main/blob/master/centos7-viaq.repo) to /etc/yum.repos.d/ and run:
+
     # yum install openshift-ansible \
       openshift-ansible-callback-plugins openshift-ansible-filter-plugins \
       openshift-ansible-lookup-plugins openshift-ansible-playbooks \
