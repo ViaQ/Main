@@ -239,6 +239,9 @@ in which case, just use "{{ ansible_default_ipv4.address }}" as the value.
   browser access - you can usually use the default value
 * `openshift_logging_es_hostname` - this is the public hostname for
   Elasticsearch direct API access - you can usually use the default value
+* `openshift_logging_elasticsearch_hostmount_path` - this is the persistent storage path.
+  Default value is: /var/lib/elasticsearch.
+  **If you did not use this path in [Persistent Storage](https://github.com/ViaQ/Main/blob/master/README-install.md#persistent-storage), please update the same path here.**
 
 You can also override variables in the inventory by setting them in
 `vars.yaml`.
