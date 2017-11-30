@@ -49,7 +49,16 @@ accept host verification, try this:
 
 Allow connections on the following ports/protocols:
   * icmp (for ping)
+  
+    Run:
+
+        # iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -d **public_hostname** -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+    
   * tcp ports 22, 80, 443, 8443 (openshift console), 9200 (Elasticsearch)
+  
+    Run:
+
+        # iptables -I INPUT -p tcp --dport <port_number> --syn -j ACCEPT
 
 You should not be prompted for a password nor to accept the host verification.
 
