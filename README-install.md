@@ -48,7 +48,6 @@ accept host verification, try this:
     # ssh **public_hostname** 'ls -al'
 
 Allow connections on the following ports/protocols:
-  * icmp (for ping)
   * tcp ports 22, 80, 443, 8443 (openshift console), 9200 (Elasticsearch)
 
 You should not be prompted for a password nor to accept the host verification.
