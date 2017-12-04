@@ -357,7 +357,7 @@ The example search below will look for all log records in project.logging and wi
       python -mjson.tool | more
 
 
-{
+    {
     "_shards": {
         "failed": 0,
         "successful": 1,
@@ -409,7 +409,7 @@ The example search below will look for all log records in project.logging and wi
     },
     "timed_out": false,
     "took": 15
-}
+    }
 
 Creating the Admin User
 -----------------------
