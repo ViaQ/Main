@@ -48,7 +48,6 @@ accept host verification, try this:
     # ssh **public_hostname** 'ls -al'
 
 Allow connections on the following ports/protocols:
-  * icmp (for ping)
   * tcp ports 22, 80, 443, 8443 (openshift console), 9200 (Elasticsearch)
 
 You should not be prompted for a password nor to accept the host verification.
@@ -96,9 +95,9 @@ configured to use persistence.
 - make this directory writable by the group `chmod -R g+w /var/lib/elasticsearch`
 - add the following selinux policy:
 
-        # semanage fcontext -a -t svirt_sandbox_file_t "/var/lib/elasticsearch(/.*)?"
+      # semanage fcontext -a -t svirt_sandbox_file_t "/var/lib/elasticsearch(/.*)?"
         
-        # restorecon -R -v /var/lib/elasticsearch
+      # restorecon -R -v /var/lib/elasticsearch
 
 
 Installing ViaQ Packages
@@ -141,8 +140,8 @@ and which parameters you may want to customize, depending on your environment.
 1. Download the files [vars.yaml.template](vars.yaml.template) and
 [ansible-inventory-origin-36-aio](ansible-inventory-origin-36-aio)
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
+       # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
+       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
 [ansible-inventory-ocp-36-aio](ansible-inventory-ocp-36-aio) file instead
@@ -167,7 +166,7 @@ so make sure any such namespaces are specified in openshift_logging_mux_namespac
 
 4. Run Ansible to verify whether the default value for `openshift_public_hostname` is correct, and if not update it.  
 
-        # ansible -m setup localhost -a 'filter=ansible_fqdn'
+       # ansible -m setup localhost -a 'filter=ansible_fqdn'
 
 to see if ansible correctly reports your host's FQDN, as defined in Configuring Ansible Prerequisites.
 If it is different, edit the value of `openshift_public_hostname` to match the public hostname returned by
@@ -181,7 +180,7 @@ the value you defined in Configuring Ansible Prerequisites.
 Check that the address field matches `openshift_public_ip`.
 Now ensure that you receive the same IP address that is used for external use by running:
 
-        # ip -4 route get 8.8.8.8
+    # ip -4 route get 8.8.8.8
 
 You will receive an output similar to the following, where 10.10.10.10 is the IP address.
 
@@ -263,11 +262,9 @@ public IP address.
 
 1. Run ansible:
 
-    # cd /usr/share/ansible/openshift-ansible
-    # (or wherever you cloned the git repo if using git)
-    # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
-      -e @/path/to/vars.yaml \
-      -i /path/to/ansible-inventory playbooks/byo/config.yml
+       # cd /usr/share/ansible/openshift-ansible
+       # (or wherever you cloned the git repo if using git)
+       # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv -e @/path/to/vars.yaml -i /path/to/ansible-inventory playbooks/byo/config.yml
 
 where `/path/to/vars.yaml` is the full path and file name where you saved your
 `vars.yaml` file, and `/path/to/ansible-inventory` is the full path and file
@@ -285,6 +282,7 @@ Enabling Elasticsearch to Mount the Directory
 The installation of Elasticsearch will fail because there is currently no way to grant
 the Elasticsearch service account permission to mount that directory.
 After installation is complete, do the following steps to enable Elasticsearch to mount the directory:
+       
         # oc project logging
         # oadm policy add-scc-to-user hostmount-anyuid \
           system:serviceaccount:logging:aggregated-logging-elasticsearch
@@ -300,7 +298,7 @@ Edit the Elasticsearch service definition to add an external IP using the opensh
 
 1. Run the following command from OpenShift Aggregated Logging machine:
 
-        # oc edit svc logging-es
+       # oc edit svc logging-es
 
 2. Look for the line with clusterIP and add two line beneath it so that the result looks like this:
 
@@ -329,19 +327,19 @@ https://github.com/openshift/origin-aggregated-logging/tree/master/hack/kopf
 
 1. To confirm that Elasticsearch, Curator, Kibana, and Fluentd pods are running, run:
 
-    # oc project logging
-    # oc get pods
+       # oc project logging
+       # oc get pods
 
 2. To confirm that the Elasticsearch and Kibana services are running, run:
 
-    # oc project logging
-    # oc get svc
+       # oc project logging
+       # oc get svc
 
 3. To confirm that there are routes for Elasticsearch and Kibana, run:
 
 
-    # oc project logging
-    # oc get routes
+       # oc project logging
+       # oc get routes
 
 
 ### Test Elasticsearch ###
@@ -350,16 +348,16 @@ To search Elasticsearch, first get the name of the Elasticsearch pod, then use o
 The example search below will look for all log records in project.logging and will sort them by @timestamp
 (which is the timestamp when the record was created at the source) in descending order (that is, latest first):
 
-        # oc project logging
-        # espod=`oc get pods -l component=es -o jsonpath='{.items[0].metadata.name}'`
-        # oc exec -c elasticsearch $espod -- curl --connect-timeout 1 -s -k \
-         --cert /etc/elasticsearch/secret/admin-cert \
-         --key /etc/elasticsearch/secret/admin-key \
-         'https://localhost:9200/project.logging.*/_search?sort=@timestamp:desc' | \
-         python -mjson.tool | more
+    # oc project logging
+    # espod=`oc get pods -l component=es -o jsonpath='{.items[0].metadata.name}'`
+    # oc exec -c elasticsearch $espod -- curl --connect-timeout 1 -s -k \
+      --cert /etc/elasticsearch/secret/admin-cert \
+      --key /etc/elasticsearch/secret/admin-key \
+      'https://localhost:9200/project.logging.*/_search?sort=@timestamp:desc' | \
+      python -mjson.tool | more
 
 
-{
+    {
     "_shards": {
         "failed": 0,
         "successful": 1,
@@ -411,7 +409,7 @@ The example search below will look for all log records in project.logging and wi
     },
     "timed_out": false,
     "took": 15
-}
+    }
 
 Creating the Admin User
 -----------------------
@@ -420,17 +418,17 @@ Manually create an admin OpenShift user to allow access to Kibana to view the RH
 
 To create an admin user:
 
-        # oc project logging
-        # oc create user admin
-        # oc create identity allow_all:admin
-        # oc create useridentitymapping allow_all:admin admin
-        # oadm policy add-cluster-role-to-user cluster-admin admin
+    # oc project logging
+    # oc create user admin
+    # oc create identity allow_all:admin
+    # oc create useridentitymapping allow_all:admin admin
+    # oadm policy add-cluster-role-to-user cluster-admin admin
 
 This will create the user account.  The password is set at the
 first login.  To set the password now:
 
-        # oc login --username=admin --password=admin
-        # oc login --username=system:admin
+    # oc login --username=admin --password=admin
+    # oc login --username=system:admin
 
 
 Running Kibana
