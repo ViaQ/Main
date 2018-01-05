@@ -123,11 +123,11 @@ openshift-ansible-roles
       openshift-ansible-lookup-plugins openshift-ansible-playbooks \
       openshift-ansible-roles
 
-If the 3.6 version of these packages are not available, you can use the
+If the 3.7 version of these packages are not available, you can use the
 git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-3.6` branch:
+`release-3.7` branch:
 
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.6
+    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.7
 
 ### Customizing vars.yaml
 
@@ -138,16 +138,16 @@ which parameters may need to be customized, after running tests
 and which parameters you may want to customize, depending on your environment.
 
 1. Download the files [vars.yaml.template](vars.yaml.template) and
-[ansible-inventory-origin-36-aio](ansible-inventory-origin-36-aio)
+[ansible-inventory-origin-37-aio](ansible-inventory-origin-37-aio)
 
        # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-36-aio > ansible-inventory
+       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-37-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-36-aio](ansible-inventory-ocp-36-aio) file instead
-of the origin-36-aio file (you still need vars.yaml.template):
+[ansible-inventory-ocp-37-aio](ansible-inventory-ocp-36-aio) file instead
+of the origin-37-aio file (you still need vars.yaml.template):
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-36-aio > ansible-inventory
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-37-aio > ansible-inventory
     
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
