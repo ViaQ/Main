@@ -13,7 +13,7 @@ openshift_image_tag=latest
 oreg_url=openshift/origin-${component}:latest
 openshift_deployment_type=origin
 openshift_logging_namespace=logging
-openshift_master_identity_providers=[{'challenge': 'true', 'login': 'true', 'kind': 'AllowAllPasswordIdentityProvider', 'name': 'allow_all'}]
+openshift_master_identity_providers=[{'mappingMethod': 'lookup', 'challenge': 'true', 'login': 'true', 'kind': 'AllowAllPasswordIdentityProvider', 'name': 'allow_all'}]
 openshift_logging_es_cluster_size=1
 openshift_logging_image_prefix=docker.io/openshift/origin-
 openshift_logging_image_version=latest
@@ -21,10 +21,12 @@ deployment_type=origin
 openshift_logging_es_allow_external=True
 openshift_logging_use_mux=True
 openshift_logging_mux_allow_external=True
-openshift_logging_mux_client_mode=maximal
 openshift_check_min_host_memory_gb=7
 openshift_check_min_host_disk_gb=14
 openshift_disable_check="package_version,docker_storage"
+openshift_logging_mux_file_buffer_storage_type=hostmount
+openshift_logging_elasticsearch_storage_type=hostmount
+openshift_logging_elasticsearch_hostmount_path=/var/lib/elasticsearch
 
 [nodes]
 localhost storage=True openshift_node_labels="{'region': 'infra'}" openshift_schedulable=True
