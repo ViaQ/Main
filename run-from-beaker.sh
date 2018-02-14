@@ -60,6 +60,12 @@ elif grep -q -i "^openshift_logging_elasticsearch_storage_type: hostmount" $HOME
     needpath=1
 fi
 
+# need a function for this!
+# return true if the given selinux type exists, false otherwise
+se_type_exists() {
+    { semanage fcontext --list 2> /dev/null || : ; } | grep -q $1
+}
+
 if [ -n "$needpath" -a -z "${path:-}" ] ; then
     echo Error: storage type is hostmount but no openshift_logging_elasticsearch_hostmount_path was specified
     exit 1
@@ -69,9 +75,23 @@ elif [ -n "$needpath" ] ; then
     fi
     chown 0:65534 $path
     chmod g+w $path
-    semanage fcontext -a -t svirt_sandbox_file_t "$path(/.*)?"
-    restorecon -R -v $path
+    # use container_file_t if available, otherwise svirt_sandbox_file_t
+    if se_type_exists container_file_t ; then
+        setype=container_file_t
+    elif se_type_exists svirt_sandbox_file_t ; then
+        setype=svirt_sandbox_file_t
+    fi
+    if [ -n "${setype:-}" ] ; then
+        semanage fcontext -a -t $setype "$path(/.*)?"
+        restorecon -R -v $path
+    else
+        echo no container_file_t or svirt_sandbox_file_t yet - try again after logging install
+    fi
 fi
+
+# ensure docker is enabled and running
+systemctl enable docker
+systemctl start docker
 
 ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv -e @$HOME/ViaQ/$VARS -i $HOME/ViaQ/$INVENTORY playbooks/byo/config.yml
 
@@ -81,6 +101,29 @@ oc login --username=system:admin
 oc project logging
 oadm policy add-cluster-role-to-user cluster-admin admin
 oc get pods
+
+if [ -n "$needpath" ] ; then
+    if [ -z "${setype:-}" ] ; then
+        if se_type_exists container_file_t ; then
+            setype=container_file_t
+        elif se_type_exists svirt_sandbox_file_t ; then
+            setype=svirt_sandbox_file_t
+        else
+            echo ERROR: no container_file_t or svirt_sandbox_file_t
+        fi
+        if [ -n "${setype:-}" ] ; then
+            semanage fcontext -a -t $setype "$path(/.*)?"
+            restorecon -R -v $path
+        fi
+    fi
+    oadm policy add-scc-to-user hostmount-anyuid \
+      system:serviceaccount:logging:aggregated-logging-elasticsearch
+    esdc=`oc get dc -l component=es -o name`
+    oc rollout cancel $esdc
+    sleep 10 # error if rollout latest while cancel not finished
+    oc rollout latest $esdc
+    oc rollout status -w $esdc
+fi
 
 if [ -x $HOME/ViaQ/setup-mux.sh ] ; then
     MUX_HOST=mux.$hostname $HOME/ViaQ/setup-mux.sh
