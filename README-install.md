@@ -113,137 +113,18 @@ running on.  It also configures the `AllowAllPasswordIdentityProvider` with
 create users.  See below for more information about users.
 
 Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.
-The following packages are required: openshift-ansible
-openshift-ansible-callback-plugins openshift-ansible-filter-plugins
-openshift-ansible-lookup-plugins openshift-ansible-playbooks
-openshift-ansible-roles
+The following packages are required:
 
     # yum install openshift-ansible \
       openshift-ansible-callback-plugins openshift-ansible-filter-plugins \
       openshift-ansible-lookup-plugins openshift-ansible-playbooks \
       openshift-ansible-roles
 
-If the 3.7 version of these packages are not available, you can use the
-git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-3.7` branch:
-
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.7
 
 ### Customizing vars.yaml
 
-During the installation, the ansible-playbook command is used together with an Ansible inventory file and a vars.yaml file.
+During the oVirt Metrics installation the ansible-inventory and vars.yaml files are generated and copied to the OpenShift machine. The OpenShift ansible-playbook command is used together with the Ansible inventory file and a vars.yaml file.
 All customization can be done via the vars.yaml file.
-The following procedures explain which parameters must be customized,
-which parameters may need to be customized, after running tests
-and which parameters you may want to customize, depending on your environment.
-
-1. Download the files [vars.yaml.template](vars.yaml.template) and
-[ansible-inventory-origin-37-aio](ansible-inventory-origin-37-aio)
-
-       # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-37-aio > ansible-inventory
-
-To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-37-aio](ansible-inventory-ocp-36-aio) file instead
-of the origin-37-aio file (you still need vars.yaml.template):
-
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-37-aio > ansible-inventory
-    
-It doesn't matter where you save these files, but you will need to know the
-full path and filename for the `ansible-inventory` and `vars.yaml` files for
-the `ansible-playbook` command below.
-
-2. Copy `vars.yaml.template` to `vars.yaml`.
-
-3. Update openshift_logging_mux_namespaces.
-
-It represents the environment name that you are sending logs from.
-It is a list (ansible/yaml list format) of OpenShift namespaces, to create in OpenShift for your logs.
-Only users who are members of those namespaces can view those logs.
-
-**NOTE POSSIBLE LOSS OF DATA** Data tagged with project.namespace.* WILL BE LOST if namespace does not exist,
-so make sure any such namespaces are specified in openshift_logging_mux_namespaces
-
-4. Run Ansible to verify whether the default value for `openshift_public_hostname` is correct, and if not update it.  
-
-       # ansible -m setup localhost -a 'filter=ansible_fqdn'
-
-to see if ansible correctly reports your host's FQDN, as defined in Configuring Ansible Prerequisites.
-If it is different, edit the value of `openshift_public_hostname` to match the public hostname returned by
-this command.
-
-5. Run Ansible to verify whether the default value for `openshift_public_ip` matches
-the value you defined in Configuring Ansible Prerequisites.
-
-        # ansible -m setup localhost -a 'filter=ansible_default_ipv4'
-
-Check that the address field matches `openshift_public_ip`.
-Now ensure that you receive the same IP address that is used for external use by running:
-
-    # ip -4 route get 8.8.8.8
-
-You will receive an output similar to the following, where 10.10.10.10 is the IP address.
-
-    8.8.8.8 via 10.0.0.1 dev enp0s25 src 10.10.10.10 uid 1000
-
-If the result of these two tests match, but the IP is different from the value defined in `openshift_public_ip`,
-edit the value of `openshift_public_ip` to match the value from the tests. 
-This is the IP address that will be used from other machines to connect to this machine.
-It will typically be used in your DNS, /etc/hosts.
-This may be the same as the eth0 IP address of the machine,
-in which case, just use "{{ ansible_default_ipv4.address }}" as the value.
-
-6. The following parameters are optional and may be changed as required.
-
-* `ansible_ssh_user` - this is either `root`, or the user created in
-  [provisioning](#provisioning-a-machine-to-run-viaq) which can use
-  passwordless ssh
-* `ansible_become` - use `no` if `ansible_ssh_user` is `root`, otherwise,
-  use `yes`
-* `openshift_logging_mux_namespaces` - **REQUIRED** Represents the environment
-  name that you are sending logs from.  It is a list (ansible/yaml list format)
-  namespaces, to create in mux for your logs. Only users who are members of
-  those namespaces can view those logs.  **NOTE POSSIBLE LOSS OF DATA**  Data
-  tagged with `project.namespace.*` WILL BE LOST if `namespace` does not exist,
-  so make sure any such namespaces are specified in
-  `openshift_logging_mux_namespaces`
-* `openshift_public_hostname` - this is the **public_hostname** value mentioned
-  above which should have been assigned during the provisioning of the
-  machine.  This must be an FQDN, and must be accessible from another machine.
-* `openshift_public_ip` - this is the **public_ip** address value mentioned
-  above which should have been assigned during the provisioning of the machine.
-  This is the IP address that will be used from other machines to connect to
-  this machine.  It will typically be used in your DNS, `/etc/hosts`, or
-  whatever host look up is used for browsers and other external client
-  programs.  For example, in OpenStack, this will be the **floating ip**
-  address of the machine.  This may be the same as the `eth0` IP address of the
-  machine, in which case, just use `"{{ ansible_default_ipv4.address }}"` as the
-  value
-* `openshift_master_default_subdomain` - this is the public subdomain to use
-  for all of the external facing logging services, such as the OpenShift UI,
-  Kibana, and Elasticsearch.  By default, the
-  **openshift_public_hostname** will be used.  Kibana will be accessed at
-  `https://kibana.{{ openshift_master_default_subdomain }}`, etc.
-* `openshift_hostname` - this is the private hostname of the machine that will
-  be used inside the cluster.  For example, OpenStack machines will have a
-  "private" hostname assigned by Neutron networking.  This may be the same as
-  the external hostname if you do not have a "private" hostname - in that case,
-  just use `{{ openshift_public_hostname }}`
-* `openshift_ip` - the private IP address, if your machine has a different
-  public and private IP address - this is almost always the value reported by
-  `ansible -m setup localhost -a filter=ansible_default_ipv4` as described above
-* `openshift_logging_master_public_url` - this is the public URL for
-  OpenShift UI access - you can usually use the default value
-* `openshift_logging_kibana_hostname` - this is the public hostname for Kibana
-  browser access - you can usually use the default value
-* `openshift_logging_es_hostname` - this is the public hostname for
-  Elasticsearch direct API access - you can usually use the default value
-* `openshift_logging_elasticsearch_hostmount_path` - this is the persistent storage path.
-  Default value is: /var/lib/elasticsearch.
-  **If you did not use this path in [Persistent Storage](https://github.com/ViaQ/Main/blob/master/README-install.md#persistent-storage), please update the same path here.**
-
-You can also override variables in the inventory by setting them in
-`vars.yaml`.
 
 
 Running Ansible
@@ -264,11 +145,8 @@ public IP address.
 
        # cd /usr/share/ansible/openshift-ansible
        # (or wherever you cloned the git repo if using git)
-       # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv -e @/path/to/vars.yaml -i /path/to/ansible-inventory playbooks/byo/config.yml
+       ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv -e @/root/vars.yaml -i /root/ansible-inventory-origin-37-aio playbooks/byo/config.yml
 
-where `/path/to/vars.yaml` is the full path and file name where you saved your
-`vars.yaml` file, and `/path/to/ansible-inventory` is the full path and file
-name where you saved your `ansible-inventory` file.
 
 2. Check `/tmp/ansible.log` if there are any errors during the run.  If this
 hangs, just kill it and run it again - Ansible is (mostly) idempotent.  Same
@@ -291,23 +169,6 @@ After installation is complete, do the following steps to enable Elasticsearch t
         # oc rollout latest $( oc get -n logging dc -l component=es -o name )
         # oc rollout status -w $( oc get -n logging dc -l component=es -o name )
 
-Enabling External Fluentd Access
---------------------------------
-
-Edit the Elasticsearch service definition to add an external IP using the openshift_public_ip from above.
-
-1. Run the following command from OpenShift Aggregated Logging machine:
-
-       # oc edit svc logging-es
-
-2. Look for the line with clusterIP and add two line beneath it so that the result looks like this:
-
-spec:
-  clusterIP: 172.xx.yy.zz
-  externalIPs:
-  -  <openshift_public_ip>
-
-3. Save the file and exit.  The changes will take effect immediately.
 
 Enabling Kopf
 -------------
@@ -416,6 +277,8 @@ Creating the Admin User
 
 Manually create an admin OpenShift user to allow access to Kibana to view the RHV metrics and log data. 
 
+**Note:** The "admin" user will be created when running the oVirt metrics playbook in the following steps.
+
 To create an admin user:
 
     # oc project logging
@@ -429,17 +292,9 @@ first login.  To set the password now:
 
     # oc login --username=admin --password=admin
     # oc login --username=system:admin
-
-
-Running Kibana
---------------
-
-
-Now you can use the `admin` username and password to access Kibana.  Just
-point your web browser at `https://kibana.logging.test` where the
-`logging.test` part is whatever you specified in the 
-`openshift_master_default_subdomain` parameter in the `vars.yaml` file.
-
+    
+Creating a "Normal" User
+-----------------------
 To create an "normal" user that can only view logs in a particular set of
 projects, follow the steps above, except do not assign the `cluster-admin`
 role, use the following instead:
@@ -449,7 +304,9 @@ role, use the following instead:
 
 Where `$username` is the name of the user you created instead of `admin`,
 and `$namespace` is the name of the project or namespace you wish to allow
-the user to have access to the logs of.  For example, to create a user
+the user to have access to the logs of.
+
+For example, to create a user
 named `loguser` that can view logs in `ovirt-metrics-engine`:
 
     # oc create user loguser
@@ -463,7 +320,6 @@ to login:
 
     # oc login --username=loguser --password=loguser
     # oc login --username=system:admin
-
 
 ## Appendix 1 CentOS7 ViaQ yum repos
 
