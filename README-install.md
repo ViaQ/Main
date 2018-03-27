@@ -20,6 +20,12 @@ Provisioning a machine to run ViaQ
   your pods will not start, will be in the Error state, and will have messages
   like this: `tcp: lookup kubernetes.default.svc.cluster.local: no such host`
 
+ViaQ is based on OpenShift logging.  The instructions below assume that you
+will be installing on a machine that will be the OpenShift master node, so you
+will need to ensure the machine meets at least the Minimum Hardware
+Requirements for a [master
+node](https://docs.openshift.org/latest/install_config/install/prerequisites.html#hardware)
+
 ViaQ on OCP requires a RHEL 7.3 or later machine.  ViaQ on Origin requires a
 up-to-date CentOS 7 machine.  You must be able to ssh into the machine using an
 ssh keypair.  The instructions below assume you are running ansible on the same
@@ -40,15 +46,15 @@ deployment).  You will need to do the following on this machine:
 * This step is only needed if not using root - enable passwordless sudo e.g. in
   sudoers config:
   * `$USER ALL=(ALL) NOPASSWD:ALL`
+* allow connections on the following ports/protocols:
+  * icmp (for ping)
+  * tcp ports 22, 80, 443, 8443 (openshift console), 9200 (Elasticsearch)
 
 To verify that passwordless ssh works, and that you do not get prompted to
 accept host verification, try this:
 
     # ssh localhost 'ls -al'
     # ssh **public_hostname** 'ls -al'
-
-Allow connections on the following ports/protocols:
-  * tcp ports 22, 80, 443, 8443 (openshift console), 9200 (Elasticsearch)
 
 You should not be prompted for a password nor to accept the host verification.
 
@@ -79,7 +85,10 @@ Persistent Storage
 
 Elasticsearch requires persistent storage for its database.
 
-We recommand 500GB SSD per 50 hosts.
+We recommend using SSD drives for the partition on which you will install
+logging.  Your storage needs will vary based on the number of applications, the
+number of hosts, the log severity level, and the log retention policy.  A large
+installation may need 100GB per day of retention, or more.
 
 Elasticsearch uses ephemeral storage by default, and so has to be manually
 configured to use persistence.
@@ -92,10 +101,16 @@ configured to use persistence.
 - Change the group ownership to the value of your
   `openshift_logging_elasticsearch_storage_group` parameter (default `65534`)
   e.g. `chgrp 65534 /var/lib/elasticsearch`
-- make this directory writable by the group `chmod -R g+w /var/lib/elasticsearch`
+- make this directory accessible by the group `chmod -R 0770 /var/lib/elasticsearch`
 - add the following selinux policy:
 
+      # semanage fcontext -a -t container_file_t "/var/lib/elasticsearch(/.*)?"
+
+If `container_file_t` is not available, use `svirt_sandbox_file_t`:
+
       # semanage fcontext -a -t svirt_sandbox_file_t "/var/lib/elasticsearch(/.*)?"
+
+Then, apply the changes to the filesystem:
         
       # restorecon -R -v /var/lib/elasticsearch
 
@@ -279,9 +294,10 @@ Note : If the installation hangs, kill it and run it again.
 
 Enabling Elasticsearch to Mount the Directory
 ---------------------------------------------
-The installation of Elasticsearch will fail because there is currently no way to grant
-the Elasticsearch service account permission to mount that directory.
-After installation is complete, do the following steps to enable Elasticsearch to mount the directory:
+The installation of Elasticsearch will fail because there is currently no way
+to grant the Elasticsearch service account permission to mount that directory
+during installation.  After installation is complete, do the following steps to
+enable Elasticsearch to mount the directory:
        
         # oc project logging
         # oadm policy add-scc-to-user hostmount-anyuid \
