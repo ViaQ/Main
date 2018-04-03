@@ -40,11 +40,11 @@ gpgcheck=0
 [centos-openshift-origin38-candidate]
 name=CentOS OpenShift Origin38 Candidate
 baseurl=http://cbs.centos.org/repos/paas7-openshift-origin38-candidate/x86_64/os
-enabled=0
+enabled=1
 gpgcheck=0
 
 [centos-openshift-origin39-candidate]
 name=CentOS OpenShift Origin39 Candidate
 baseurl=http://cbs.centos.org/repos/paas7-openshift-origin39-candidate/x86_64/os
-enabled=0
+enabled=1
 gpgcheck=0

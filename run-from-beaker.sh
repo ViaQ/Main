@@ -32,6 +32,16 @@ if [ -n "${OPENSHIFT_ANSIBLE_REPO:-}" ] ; then
     OPENSHIFT_ANSIBLE_DIR=$HOME/openshift-ansible
 else
     OPENSHIFT_ANSIBLE_DIR=${OPENSHIFT_ANSIBLE_DIR:-/usr/share/ansible/openshift-ansible}
+    # workaround until commit eddb211416770e68a5d31d926d017f64a362810f
+    # Date:   Thu Feb 15 17:39:03 2018 -0600
+    # Removing include_tasks calls and fixing prior cherrypicks
+    # is available in openshift-ansible 3.7.x
+    filtfile=$OPENSHIFT_ANSIBLE_DIR/roles/lib_utils/filter_plugins/oo_filters.py
+    if grep -q "def lib_utils_oo_random_word" $filtfile ; then
+        echo using fixed ansible
+    else
+        find $OPENSHIFT_ANSIBLE_DIR -name \*.yaml -exec sed -i -e 's/lib_utils_oo_random_word/oo_random_word/g' {} \;
+    fi
 fi
 
 # add ip to known_hosts to avoid
@@ -42,7 +52,6 @@ ssh-keyscan -H localhost >> /root/.ssh/known_hosts
 
 cp $HOME/ViaQ/vars.yaml.template $HOME/ViaQ/vars.yaml
 cp $HOME/ViaQ/$INVENTORY_SOURCE $HOME/ViaQ/$INVENTORY
-# run ansible
 cd $OPENSHIFT_ANSIBLE_DIR
 
 for file in $HOME/ViaQ/*.patch ; do
@@ -93,14 +102,34 @@ fi
 systemctl enable docker
 systemctl start docker
 
-ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv -e @$HOME/ViaQ/$VARS -i $HOME/ViaQ/$INVENTORY playbooks/byo/config.yml
+if [ -s "playbooks/prerequisites.yml" ] ; then
+    ANSIBLE_LOG_PATH=/var/log/ansible-prereqs.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv \
+        -e @$HOME/ViaQ/$VARS ${EXTRA_EVARS:-} -i $HOME/ViaQ/$INVENTORY "playbooks/prerequisites.yml"
+fi
+
+if [ -s "playbooks/openshift-node/network_manager.yml" ]; then
+    playbook="playbooks/openshift-node/network_manager.yml"
+else
+    playbook="playbooks/byo/openshift-node/network_manager.yml"
+fi
+ANSIBLE_LOG_PATH=/var/log/ansible-network.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv \
+    -e @$HOME/ViaQ/$VARS ${EXTRA_EVARS:-} -i $HOME/ViaQ/$INVENTORY $playbook
+
+if [ -s "playbooks/deploy_cluster.yml" ]; then
+    playbook="playbooks/deploy_cluster.yml"
+else
+    playbook="playbooks/byo/config.yml"
+fi
+ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv \
+    -e @$HOME/ViaQ/$VARS ${EXTRA_EVARS:-} -i $HOME/ViaQ/$INVENTORY $playbook
 
 oc project logging
+oc create user admin
+oc create identity allow_all:admin
+oc create useridentitymapping allow_all:admin admin
+oc adm policy add-cluster-role-to-user cluster-admin admin
 oc login --username=admin --password=admin
 oc login --username=system:admin
-oc project logging
-oadm policy add-cluster-role-to-user cluster-admin admin
-oc get pods
 
 if [ -n "$needpath" ] ; then
     if [ -z "${setype:-}" ] ; then
@@ -116,7 +145,7 @@ if [ -n "$needpath" ] ; then
             restorecon -R -v $path
         fi
     fi
-    oadm policy add-scc-to-user hostmount-anyuid \
+    oc adm policy add-scc-to-user hostmount-anyuid \
       system:serviceaccount:logging:aggregated-logging-elasticsearch
     esdc=`oc get dc -l component=es -o name`
     oc rollout cancel $esdc
@@ -128,3 +157,4 @@ fi
 if [ -x $HOME/ViaQ/setup-mux.sh ] ; then
     MUX_HOST=mux.$hostname $HOME/ViaQ/setup-mux.sh
 fi
+oc get pods
