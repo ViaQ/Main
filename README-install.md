@@ -138,31 +138,31 @@ openshift-ansible-roles
       openshift-ansible-lookup-plugins openshift-ansible-playbooks \
       openshift-ansible-roles
 
-If the 3.7 version of these packages are not available, you can use the
+If the 3.9 version of these packages are not available, you can use the
 git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-3.7` branch:
+`release-3.9` branch:
 
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.7
+    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.9
 
 ### Customizing vars.yaml
 
-During the installation, the ansible-playbook command is used together with an Ansible inventory file and a vars.yaml file.
-All customization can be done via the vars.yaml file.
-The following procedures explain which parameters must be customized,
-which parameters may need to be customized, after running tests
-and which parameters you may want to customize, depending on your environment.
+During the installation, the ansible-playbook command is used together with an
+Ansible inventory file and a vars.yaml file.  All customization can be done via
+the vars.yaml file.  The following procedures explain which parameters must be
+customized, which parameters may need to be customized, after running tests and
+which parameters you may want to customize, depending on your environment.
 
 1. Download the files [vars.yaml.template](vars.yaml.template) and
-[ansible-inventory-origin-37-aio](ansible-inventory-origin-37-aio)
+[ansible-inventory-origin-39-aio](ansible-inventory-origin-39-aio)
 
        # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-37-aio > ansible-inventory
+       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-39-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-37-aio](ansible-inventory-ocp-36-aio) file instead
-of the origin-37-aio file (you still need vars.yaml.template):
+[ansible-inventory-ocp-39-aio](ansible-inventory-ocp-39-aio) file instead
+of the origin-39-aio file (you still need vars.yaml.template):
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-37-aio > ansible-inventory
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-39-aio > ansible-inventory
     
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
@@ -272,25 +272,42 @@ Running Ansible
 * `openshift.logging.test` - replace this with your `openshift_public_hostname`
 * `kibana.logging.test` - replace this with `openshift_logging_kibana_hostname`
 
-The public hostname should typically be a DNS entry for the
-public IP address.
+The public hostname should typically be a DNS entry for the public IP address.
+In the following steps, `/path/to/vars.yaml` is the full path and file name
+where you saved your `vars.yaml` file, and `/path/to/ansible-inventory` is the
+full path and file name where you saved your `ansible-inventory` file.
 
-1. Run ansible:
+1. Run ansible using the `prerequisites.yml` playbook to ensure the machine is
+   configured correctly:
 
-       # cd /usr/share/ansible/openshift-ansible
+       cd /usr/share/ansible/openshift-ansible
        # (or wherever you cloned the git repo if using git)
-       # ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv -e @/path/to/vars.yaml -i /path/to/ansible-inventory playbooks/byo/config.yml
+       ANSIBLE_LOG_PATH=/tmp/ansible-prereq.log ansible-playbook -vvv \
+           -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
+           playbooks/prerequisites.yml
 
-where `/path/to/vars.yaml` is the full path and file name where you saved your
-`vars.yaml` file, and `/path/to/ansible-inventory` is the full path and file
-name where you saved your `ansible-inventory` file.
+2. Run ansible using the `openshift-node/network_manager.yml` playbook to
+   ensure networking and NetworkManager are configured correctly:
 
-2. Check `/tmp/ansible.log` if there are any errors during the run.  If this
+       cd /usr/share/ansible/openshift-ansible
+       # (or wherever you cloned the git repo if using git)
+       ANSIBLE_LOG_PATH=/tmp/ansible-network.log ansible-playbook -vvv \
+           -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
+           playbooks/openshift-node/network_manager.yml
+
+3. Run ansible using the `deploy_cluster.yml` playbook to install OpenShift and
+   the logging components:
+
+       cd /usr/share/ansible/openshift-ansible
+       # (or wherever you cloned the git repo if using git)
+       ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
+           -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
+           playbooks/deploy_cluster.yml
+
+4. Check `/tmp/ansible.log` if there are any errors during the run.  If this
 hangs, just kill it and run it again - Ansible is (mostly) idempotent.  Same
 applies if there are any errors during the run - fix the machine and/or the
 `vars.yaml` and run it again.
-
-Note : If the installation hangs, kill it and run it again.
 
 Enabling Elasticsearch to Mount the Directory
 ---------------------------------------------
@@ -298,9 +315,9 @@ The installation of Elasticsearch will fail because there is currently no way
 to grant the Elasticsearch service account permission to mount that directory
 during installation.  After installation is complete, do the following steps to
 enable Elasticsearch to mount the directory:
-       
+
         # oc project logging
-        # oadm policy add-scc-to-user hostmount-anyuid \
+        # oc adm policy add-scc-to-user hostmount-anyuid \
           system:serviceaccount:logging:aggregated-logging-elasticsearch
 
         # oc rollout cancel $( oc get -n logging dc -l component=es -o name )
@@ -438,7 +455,7 @@ To create an admin user:
     # oc create user admin
     # oc create identity allow_all:admin
     # oc create useridentitymapping allow_all:admin admin
-    # oadm policy add-cluster-role-to-user cluster-admin admin
+    # oc adm policy add-cluster-role-to-user cluster-admin admin
 
 This will create the user account.  The password is set at the
 first login.  To set the password now:
@@ -461,7 +478,7 @@ projects, follow the steps above, except do not assign the `cluster-admin`
 role, use the following instead:
 
     # oc project $namespace
-    # oadm policy add-role-to-user view $username
+    # oc adm policy add-role-to-user view $username
 
 Where `$username` is the name of the user you created instead of `admin`,
 and `$namespace` is the name of the project or namespace you wish to allow
@@ -472,7 +489,7 @@ named `loguser` that can view logs in `ovirt-metrics-engine`:
     # oc create identity allow_all:loguser
     # oc create useridentitymapping allow_all:loguser loguser
     # oc project ovirt-metrics-engine
-    # oadm policy add-role-to-user view loguser
+    # oc adm policy add-role-to-user view loguser
 
 and to assign the password immediately instead of waiting for the user
 to login:
