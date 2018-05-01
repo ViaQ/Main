@@ -6,8 +6,8 @@ masters
 [OSEv3:vars]
 ansible_connection=local
 openshift_release=v1.5
-openshift_hosted_logging_deploy=true
-openshift_logging_install_logging=true
+openshift_hosted_logging_deploy=True
+openshift_logging_install_logging=True
 short_version=1.5
 openshift_deployment_type=origin
 openshift_logging_namespace=logging
