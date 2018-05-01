@@ -7,7 +7,7 @@ etcd
 [OSEv3:vars]
 ansible_connection=local
 openshift_release=v3.7
-openshift_logging_install_logging=true
+openshift_logging_install_logging=True
 short_version=3.7
 openshift_deployment_type=origin
 openshift_master_identity_providers=[{'mappingMethod': 'lookup', 'challenge': 'true', 'login': 'true', 'kind': 'AllowAllPasswordIdentityProvider', 'name': 'allow_all'}]
