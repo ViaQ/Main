@@ -123,7 +123,12 @@ fi
 ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv \
     -e @$HOME/ViaQ/$VARS ${EXTRA_EVARS:-} -i $HOME/ViaQ/$INVENTORY $playbook
 
-oc project logging
+if oc get project openshift-logging > /dev/null 2>&1 ; then
+    LOGGING_NS=openshift-logging
+else
+    LOGGING_NS=logging
+fi
+oc project $LOGGING_NS
 oc create user admin
 oc create identity allow_all:admin
 oc create useridentitymapping allow_all:admin admin
@@ -146,7 +151,7 @@ if [ -n "$needpath" ] ; then
         fi
     fi
     oc adm policy add-scc-to-user hostmount-anyuid \
-      system:serviceaccount:logging:aggregated-logging-elasticsearch
+      system:serviceaccount:$LOGGING_NS:aggregated-logging-elasticsearch
     esdc=`oc get dc -l component=es -o name`
     oc rollout cancel $esdc
     sleep 10 # error if rollout latest while cancel not finished
