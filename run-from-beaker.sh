@@ -60,6 +60,21 @@ for file in $HOME/ViaQ/*.patch ; do
     fi
 done
 
+pushd $HOME/ViaQ > /dev/null 2>&1
+for file in *.te ; do
+    if [ -f "$file" ] ; then
+        rc=0
+        mod=$( echo "$file" | sed -e '/[.]te$//' )
+        checkmodule -M -m -o ${mod}.mod $file || rc=1
+        semodule_package -o ${mod}.pp -m ${mod}.mod || rc=1
+        semodule -i ${mod}.pp || rc=1
+        if [ $rc = 1 ] ; then
+            echo Error: could not apply selinux policy from $HOME/ViaQ/$file
+        fi
+    fi
+done
+popd > /dev/null 2>&1
+
 needpath=
 if grep -q -i \^openshift_logging_elasticsearch_storage_type=hostmount $HOME/ViaQ/$INVENTORY ; then
     path=$( awk -F'[ =]+' '/^openshift_logging_elasticsearch_hostmount_path/ {print $2}' $HOME/ViaQ/$INVENTORY )
