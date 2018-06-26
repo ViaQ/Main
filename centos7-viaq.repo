@@ -43,8 +43,8 @@ baseurl=http://cbs.centos.org/repos/paas7-openshift-origin38-candidate/x86_64/os
 enabled=1
 gpgcheck=0
 
-[centos-openshift-origin39-candidate]
-name=CentOS OpenShift Origin39 Candidate
-baseurl=http://cbs.centos.org/repos/paas7-openshift-origin39-candidate/x86_64/os
+[centos-openshift-origin310-candidate]
+name=CentOS OpenShift Origin310 Candidate
+baseurl=http://cbs.centos.org/repos/paas7-openshift-origin310-candidate/x86_64/os
 enabled=1
 gpgcheck=0

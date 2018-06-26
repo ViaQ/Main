@@ -172,27 +172,27 @@ openshift-ansible-playbooks openshift-ansible-roles
     # yum install openshift-ansible \
       openshift-ansible-playbooks openshift-ansible-roles
 
-If the 3.9 version of these packages are not available, you can use the
+If the 3.10 version of these packages are not available, you can use the
 git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-3.9` branch:
+`release-3.10` branch:
 
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.9
+    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.10
 
 You will need to use the `ansible-playbook` command with an Ansible inventory
 file and a `vars.yaml` file.  You should not have to edit the inventory file.
 All customization can be done via the `vars.yaml` file.
 
 Download the files [vars.yaml.template](vars.yaml.template) and
-[ansible-inventory-origin-39-aio](ansible-inventory-origin-39-aio)
+[ansible-inventory-origin-310-aio](ansible-inventory-origin-310-aio)
 
     # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-39-aio > ansible-inventory
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-310-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-39-aio](ansible-inventory-ocp-39-aio) file instead
-of the origin-39-aio file (you still need vars.yaml.template):
+[ansible-inventory-ocp-310-aio](ansible-inventory-ocp-310-aio) file instead
+of the origin-310-aio file (you still need vars.yaml.template):
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-39-aio > ansible-inventory
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-310-aio > ansible-inventory
     
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
