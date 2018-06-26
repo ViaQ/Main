@@ -45,7 +45,7 @@ openshift_logging_es_hostname: es.{{ openshift_master_default_subdomain }}
 openshift_logging_mux_hostname: mux.{{ openshift_master_default_subdomain }}
 
 # ES tuning parameters
-openshift_logging_es_memory_limit: 4Gi
+openshift_logging_es_memory_limit: 8Gi
 
 # mux tuning parameters
 #openshift_logging_mux_file_buffer_limit: 2Gi
