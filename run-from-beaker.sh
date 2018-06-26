@@ -64,7 +64,7 @@ pushd $HOME/ViaQ > /dev/null 2>&1
 for file in *.te ; do
     if [ -f "$file" ] ; then
         rc=0
-        mod=$( echo "$file" | sed -e '/[.]te$//' )
+        mod=$( echo "$file" | sed -e 's/[.]te$//' )
         checkmodule -M -m -o ${mod}.mod $file || rc=1
         semodule_package -o ${mod}.pp -m ${mod}.mod || rc=1
         semodule -i ${mod}.pp || rc=1
