@@ -5,11 +5,8 @@ require {
         type var_log_t;
         type container_t;
         class dir { add_name remove_name write };
-        class file { append create ioctl open read rename unlink };
+        class file { getattr append create ioctl open read rename unlink };
 }
 
-allow container_t var_log_t:dir remove_name;
-allow container_t var_log_t:dir { add_name write };
-allow container_t var_log_t:file { rename unlink };
-allow container_t var_log_t:file { append create ioctl open read };
-
+allow container_t var_log_t:dir { add_name remove_name write };
+allow container_t var_log_t:file { getattr append create ioctl open read rename unlink };
