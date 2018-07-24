@@ -128,13 +128,17 @@ running on.  It also configures the `AllowAllPasswordIdentityProvider` with
 create users.  See below for more information about users.
 
 Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.
-The following packages are required: openshift-ansible
-openshift-ansible-playbooks openshift-ansible-roles
+**NOTE** as of 2018-07-24, the openshift-ansible RPM packages for Origin
+available from the CentOS repos do not work with recent versions of ansible.
+You will need to follow the instructions below for cloning and using
+openshift-ansible from github.  If using RPMs, the following packages are
+required: openshift-ansible openshift-ansible-playbooks openshift-ansible-roles
 
     # yum install openshift-ansible \
       openshift-ansible-playbooks openshift-ansible-roles
 
-If the 3.9 version of these packages are not available, you can use the
+If the 3.9 version of these packages are not available, or do not work with
+recent versions of ansible, you can use the
 git repo `https://github.com/openshift/openshift-ansible.git` and the
 `release-3.9` branch:
 
