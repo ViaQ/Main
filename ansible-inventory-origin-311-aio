@@ -16,8 +16,8 @@ openshift_node_groups=[{'name': 'node-config-all-in-one', 'labels': ['node-role.
 openshift_logging_es_nodeselector={'node-role.kubernetes.io/infra': 'true'}
 
 openshift_logging_es_allow_external=True
-openshift_logging_use_mux=True
-openshift_logging_mux_allow_external=True
+#openshift_logging_use_mux=True
+#openshift_logging_mux_allow_external=True
 openshift_logging_mux_file_buffer_storage_type=hostmount
 openshift_logging_elasticsearch_storage_type=hostmount
 openshift_logging_elasticsearch_hostmount_path=/var/lib/elasticsearch

@@ -60,6 +60,21 @@ for file in $HOME/ViaQ/*.patch ; do
     fi
 done
 
+pushd $HOME/ViaQ > /dev/null 2>&1
+for file in *.te ; do
+    if [ -f "$file" ] ; then
+        rc=0
+        mod=$( echo "$file" | sed -e 's/[.]te$//' )
+        checkmodule -M -m -o ${mod}.mod $file || rc=1
+        semodule_package -o ${mod}.pp -m ${mod}.mod || rc=1
+        semodule -i ${mod}.pp || rc=1
+        if [ $rc = 1 ] ; then
+            echo Error: could not apply selinux policy from $HOME/ViaQ/$file
+        fi
+    fi
+done
+popd > /dev/null 2>&1
+
 needpath=
 if grep -q -i \^openshift_logging_elasticsearch_storage_type=hostmount $HOME/ViaQ/$INVENTORY ; then
     path=$( awk -F'[ =]+' '/^openshift_logging_elasticsearch_hostmount_path/ {print $2}' $HOME/ViaQ/$INVENTORY )
@@ -123,7 +138,12 @@ fi
 ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook ${ANSIBLE_LOCAL:-} -vvv \
     -e @$HOME/ViaQ/$VARS ${EXTRA_EVARS:-} -i $HOME/ViaQ/$INVENTORY $playbook
 
-oc project logging
+if oc get project openshift-logging > /dev/null 2>&1 ; then
+    LOGGING_NS=openshift-logging
+else
+    LOGGING_NS=logging
+fi
+oc project $LOGGING_NS
 oc create user admin
 oc create identity allow_all:admin
 oc create useridentitymapping allow_all:admin admin
@@ -146,7 +166,7 @@ if [ -n "$needpath" ] ; then
         fi
     fi
     oc adm policy add-scc-to-user hostmount-anyuid \
-      system:serviceaccount:logging:aggregated-logging-elasticsearch
+      system:serviceaccount:$LOGGING_NS:aggregated-logging-elasticsearch
     esdc=`oc get dc -l component=es -o name`
     oc rollout cancel $esdc
     sleep 10 # error if rollout latest while cancel not finished

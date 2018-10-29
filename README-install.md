@@ -4,12 +4,13 @@ Setting Up ViaQ Logging
 Intro
 -----
 
-ViaQ Logging is based on the [OpenShift
-Logging](https://github.com/openshift/origin-aggregated-logging) stack.  You
-can use either the OpenShift Container Platform (OCP) based on RHEL7, or
-OpenShift Origin (Origin) based on CentOS7.  Ansible is used to install logging
-using the [OpenShift Ansible](https://github.com/openshift/openshift-ansible)
-logging
+ViaQ Logging is based on the
+[OpenShift Logging](https://github.com/openshift/origin-aggregated-logging)
+stack.  You can use either the OpenShift Container Platform
+[OCP](https://www.openshift.com/) based on RHEL7, or OpenShift OKD
+[OKD](https://www.okd.io/) based on CentOS7.  Ansible is used to install
+logging using the
+[OpenShift Ansible](https://github.com/openshift/openshift-ansible) logging
 [roles](https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_logging/README.md).
 
 Provisioning a machine to run ViaQ
@@ -26,7 +27,7 @@ will need to ensure the machine meets at least the Minimum Hardware
 Requirements for a [master
 node](https://docs.openshift.org/latest/install_config/install/prerequisites.html#hardware)
 
-ViaQ on OCP requires a RHEL 7.3 or later machine.  ViaQ on Origin requires a
+ViaQ on OCP requires a RHEL 7.5 or later machine.  ViaQ on OKD requires a
 up-to-date CentOS 7 machine.  You must be able to ssh into the machine using an
 ssh keypair.  The instructions below assume you are running ansible on the same
 machine that you are going to be using to run logging (as an all-in-one or aio
@@ -65,11 +66,11 @@ attempt to ssh to localhost.
 
 ViaQ on OCP requires a RHEL and OCP subscription.  For more information about
 RHEL configuration, see
-[Host Registration](https://access.redhat.com/documentation/en-us/openshift_container_platform/3.5/html/installation_and_configuration/installing-a-cluster#host-registration)
+[Host Registration](https://docs.openshift.com/container-platform/3.11/install/host_preparation.html#host-registration)
 For RHEL, you must enable the Extras and the rhel-7-fast-datapath-rpms channels
 (for docker and ovs, among others).
 
-ViaQ on Origin requires these [Yum Repos](centos7-viaq.repo).
+ViaQ on OKD requires these [Yum Repos](centos7-viaq.repo).
 You will need to install the following packages: docker, iptables-services.
 
     # yum install docker iptables-services
@@ -104,15 +105,15 @@ configured to use persistence.
 - make this directory accessible by the group `chmod -R 0770 /var/lib/elasticsearch`
 - add the following selinux policy:
 
-      # semanage fcontext -a -t container_file_t "/var/lib/elasticsearch(/.*)?"
+        # semanage fcontext -a -t container_file_t "/var/lib/elasticsearch(/.*)?"
 
 If `container_file_t` is not available, use `svirt_sandbox_file_t`:
 
-      # semanage fcontext -a -t svirt_sandbox_file_t "/var/lib/elasticsearch(/.*)?"
+        # semanage fcontext -a -t svirt_sandbox_file_t "/var/lib/elasticsearch(/.*)?"
 
 Then, apply the changes to the filesystem:
         
-      # restorecon -R -v /var/lib/elasticsearch
+        # restorecon -R -v /var/lib/elasticsearch
 
 
 Installing ViaQ Packages
@@ -127,18 +128,36 @@ running on.  It also configures the `AllowAllPasswordIdentityProvider` with
 `mappingMethod: lookup`, which means the administrator will need to manually
 create users.  See below for more information about users.
 
-Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.
-The following packages are required: openshift-ansible
-openshift-ansible-playbooks openshift-ansible-roles
+Ansible is used to install ViaQ and OCP or OKD using OpenShift Ansible.
 
-    # yum install openshift-ansible \
-      openshift-ansible-playbooks openshift-ansible-roles
+*CentOS with OKD*
 
-If the 3.10 version of these packages are not available, you can use the
-git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-3.10` branch:
+First install the packages `centos-release-openshift-origin311` and
+`centos-release-ansible26`.  These will configure the yum repositories on the
+system.
 
-    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.10
+    # yum install centos-release-openshift-origin311 \
+    centos-release-ansible26
+
+Next, install the following packages:
+
+    # yum install origin-sdn-ovs openshift-ansible \
+    openshift-ansible-playbooks openshift-ansible-roles
+
+*RHEL with OCP*
+
+Assuming the system has been registered with the SDN and configured with the
+correct channels:
+
+    # yum install atomic-openshift-sdn-ovs openshift-ansible \
+    openshift-ansible-playbooks openshift-ansible-roles
+
+If the 3.11 version of the openshift-ansible packages are not available, or do
+not work with recent versions of ansible, you can use the git repo
+`https://github.com/openshift/openshift-ansible.git` and the `release-3.11`
+branch:
+
+    # git clone https://github.com/openshift/openshift-ansible.git -b release-3.11
 
 ### Customizing vars.yaml
 
@@ -149,16 +168,16 @@ customized, which parameters may need to be customized, after running tests and
 which parameters you may want to customize, depending on your environment.
 
 1. Download the files [vars.yaml.template](vars.yaml.template) and
-[ansible-inventory-origin-310-aio](ansible-inventory-origin-310-aio)
+[ansible-inventory-origin-311-aio](ansible-inventory-origin-311-aio)
 
        # curl https://raw.githubusercontent.com/ViaQ/Main/master/vars.yaml.template > vars.yaml.template
-       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-310-aio > ansible-inventory
+       # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-origin-311-aio > ansible-inventory
 
 To use ViaQ on Red Hat OCP, use the
-[ansible-inventory-ocp-310-aio](ansible-inventory-ocp-310-aio) file instead
-of the origin-310-aio file (you still need vars.yaml.template):
+[ansible-inventory-ocp-311-aio](ansible-inventory-ocp-311-aio) file instead
+of the origin-311-aio file (you still need vars.yaml.template):
 
-    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-310-aio > ansible-inventory
+    # curl https://raw.githubusercontent.com/ViaQ/Main/master/ansible-inventory-ocp-311-aio > ansible-inventory
     
 It doesn't matter where you save these files, but you will need to know the
 full path and filename for the `ansible-inventory` and `vars.yaml` files for
@@ -166,7 +185,7 @@ the `ansible-playbook` command below.
 
 2. Copy `vars.yaml.template` to `vars.yaml`.
 
-3. Update openshift_logging_mux_namespaces.
+3. Update `openshift_logging_mux_namespaces`.
 
 It represents the environment name that you are sending logs from.
 It is a list (ansible/yaml list format) of OpenShift namespaces, to create in OpenShift for your logs.
@@ -276,27 +295,27 @@ full path and file name where you saved your `ansible-inventory` file.
 1. Run ansible using the `prerequisites.yml` playbook to ensure the machine is
    configured correctly:
 
-       cd /usr/share/ansible/openshift-ansible
-       # (or wherever you cloned the git repo if using git)
-       ANSIBLE_LOG_PATH=/tmp/ansible-prereq.log ansible-playbook -vvv \
+        cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        ANSIBLE_LOG_PATH=/tmp/ansible-prereq.log ansible-playbook -vvv \
            -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
            playbooks/prerequisites.yml
 
 2. Run ansible using the `openshift-node/network_manager.yml` playbook to
    ensure networking and NetworkManager are configured correctly:
 
-       cd /usr/share/ansible/openshift-ansible
-       # (or wherever you cloned the git repo if using git)
-       ANSIBLE_LOG_PATH=/tmp/ansible-network.log ansible-playbook -vvv \
+        cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        ANSIBLE_LOG_PATH=/tmp/ansible-network.log ansible-playbook -vvv \
            -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
            playbooks/openshift-node/network_manager.yml
 
 3. Run ansible using the `deploy_cluster.yml` playbook to install OpenShift and
    the logging components:
 
-       cd /usr/share/ansible/openshift-ansible
-       # (or wherever you cloned the git repo if using git)
-       ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
+        cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
            -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
            playbooks/deploy_cluster.yml
 
@@ -312,13 +331,13 @@ to grant the Elasticsearch service account permission to mount that directory
 during installation.  After installation is complete, do the following steps to
 enable Elasticsearch to mount the directory:
 
-        # oc project logging
+        # oc project openshift-logging
         # oc adm policy add-scc-to-user hostmount-anyuid \
-          system:serviceaccount:logging:aggregated-logging-elasticsearch
+          system:serviceaccount:openshift-logging:aggregated-logging-elasticsearch
 
-        # oc rollout cancel $( oc get -n logging dc -l component=es -o name )
-        # oc rollout latest $( oc get -n logging dc -l component=es -o name )
-        # oc rollout status -w $( oc get -n logging dc -l component=es -o name )
+        # oc rollout cancel $( oc get -n openshift-logging dc -l component=es -o name )
+        # oc rollout latest $( oc get -n openshift-logging dc -l component=es -o name )
+        # oc rollout status -w $( oc get -n openshift-logging dc -l component=es -o name )
 
 Enabling External Fluentd Access
 --------------------------------
@@ -327,14 +346,14 @@ Edit the Elasticsearch service definition to add an external IP using the opensh
 
 1. Run the following command from OpenShift Aggregated Logging machine:
 
-       # oc edit svc logging-es
+        # oc edit svc logging-es
 
 2. Look for the line with clusterIP and add two line beneath it so that the result looks like this:
 
-spec:
-  clusterIP: 172.xx.yy.zz
-  externalIPs:
-  -  <openshift_public_ip>
+        spec:
+          clusterIP: 172.xx.yy.zz
+          externalIPs:
+          -  <openshift_public_ip>
 
 3. Save the file and exit.  The changes will take effect immediately.
 
@@ -351,38 +370,36 @@ See:
 https://github.com/openshift/origin-aggregated-logging/tree/master/hack/kopf
 
 
-
 ### Post-Install Checking ###
 
-1. To confirm that Elasticsearch, Curator, Kibana, and Fluentd pods are running, run:
+1. To confirm that Elasticsearch, Kibana, and Fluentd pods are running, run:
 
-       # oc project logging
-       # oc get pods
+        # oc project openshift-logging
+        # oc get pods
 
 2. To confirm that the Elasticsearch and Kibana services are running, run:
 
-       # oc project logging
-       # oc get svc
+        # oc project openshift-logging
+        # oc get svc
 
 3. To confirm that there are routes for Elasticsearch and Kibana, run:
 
-
-       # oc project logging
-       # oc get routes
+        # oc project openshift-logging
+        # oc get routes
 
 
 ### Test Elasticsearch ###
 
 To search Elasticsearch, first get the name of the Elasticsearch pod, then use oc exec to query Elasticsearch.
-The example search below will look for all log records in project.logging and will sort them by @timestamp
+The example search below will look for all log records in .operations.* and will sort them by @timestamp
 (which is the timestamp when the record was created at the source) in descending order (that is, latest first):
 
-    # oc project logging
+    # oc project openshift-logging
     # espod=`oc get pods -l component=es -o jsonpath='{.items[0].metadata.name}'`
     # oc exec -c elasticsearch $espod -- curl --connect-timeout 1 -s -k \
       --cert /etc/elasticsearch/secret/admin-cert \
       --key /etc/elasticsearch/secret/admin-key \
-      'https://localhost:9200/project.logging.*/_search?sort=@timestamp:desc' | \
+      'https://localhost:9200/.operations.*/_search?sort=@timestamp:desc' | \
       python -mjson.tool | more
 
 
@@ -396,7 +413,7 @@ The example search below will look for all log records in project.logging and wi
         "hits": [
             {
                 "_id": "AVi70uBa6F1hLfsBbCQq",
-                "_index": "project.logging.42eab680-b7f9-11e6-a793-fa163e8a98f9.2016.12.01",
+                "_index": ".operations.2016.12.01",
                 "_score": 1.0,
                 "_source": {
                     "@timestamp": "2016-12-01T14:09:53.848788-05:00",
@@ -413,7 +430,7 @@ The example search below will look for all log records in project.logging and wi
                             "provider": "openshift"
                         },
                         "namespace_id": "42eab680-b7f9-11e6-a793-fa163e8a98f9",
-                        "namespace_name": "logging",
+                        "namespace_name": "openshift-logging",
                         "pod_id": "b2806c29-b7f9-11e6-a793-fa163e8a98f9",
                         "pod_name": "logging-deployer-akqwb"
                     },
@@ -447,7 +464,7 @@ Manually create an admin OpenShift user to allow access to Kibana to view the RH
 
 To create an admin user:
 
-    # oc project logging
+    # oc project openshift-logging
     # oc create user admin
     # oc create identity allow_all:admin
     # oc create useridentitymapping allow_all:admin admin
