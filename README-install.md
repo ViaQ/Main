@@ -65,7 +65,7 @@ attempt to ssh to localhost.
 
 ViaQ on OCP requires a RHEL and OCP subscription.  For more information about
 RHEL configuration, see
-[Host Registration](https://access.redhat.com/documentation/en-us/openshift_container_platform/3.5/html/installation_and_configuration/installing-a-cluster#host-registration)
+[Host Registration](https://docs.openshift.com/container-platform/3.9/install_config/install/host_preparation.html#host-registration)
 For RHEL, you must enable the Extras and the rhel-7-fast-datapath-rpms channels
 (for docker and ovs, among others).
 
@@ -127,20 +127,26 @@ running on.  It also configures the `AllowAllPasswordIdentityProvider` with
 `mappingMethod: lookup`, which means the administrator will need to manually
 create users.  See below for more information about users.
 
-Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.
-**NOTE** as of 2018-07-24, the openshift-ansible RPM packages for Origin
-available from the CentOS repos do not work with recent versions of ansible.
-You will need to follow the instructions below for cloning and using
-openshift-ansible from github.  If using RPMs, the following packages are
-required: openshift-ansible openshift-ansible-playbooks openshift-ansible-roles
+Ansible is used to install ViaQ and OCP or Origin using OpenShift Ansible.  If
+you are using Origin on CentOS, you will need to install ansible 2.6 from
+`https://cbs.centos.org/repos/configmanagement7-ansible-26-testing/x86_64/os/`
+This repo is configured in the `centos7-viaq.repo` file.
 
-    # yum install openshift-ansible \
-      openshift-ansible-playbooks openshift-ansible-roles
+The following packages are required for Origin: origin-sdn-ovs
+openshift-ansible openshift-ansible-playbooks openshift-ansible-roles
 
-If the 3.9 version of these packages are not available, or do not work with
-recent versions of ansible, you can use the
-git repo `https://github.com/openshift/openshift-ansible.git` and the
-`release-3.9` branch:
+    # yum install origin-sdn-ovs openshift-ansible \
+    openshift-ansible-playbooks openshift-ansible-roles
+
+For OCP, use atomic-openshift-sdn-ovs instead of origin-sdn-ovs:
+
+    # yum install atomic-openshift-sdn-ovs openshift-ansible \
+    openshift-ansible-playbooks openshift-ansible-roles
+
+If the 3.9 version of the openshift-ansible packages are not available, or do
+not work with recent versions of ansible, you can use the git repo
+`https://github.com/openshift/openshift-ansible.git` and the `release-3.9`
+branch:
 
     # git clone https://github.com/openshift/openshift-ansible.git -b release-3.9
 
@@ -280,27 +286,27 @@ full path and file name where you saved your `ansible-inventory` file.
 1. Run ansible using the `prerequisites.yml` playbook to ensure the machine is
    configured correctly:
 
-       cd /usr/share/ansible/openshift-ansible
-       # (or wherever you cloned the git repo if using git)
-       ANSIBLE_LOG_PATH=/tmp/ansible-prereq.log ansible-playbook -vvv \
+        cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        ANSIBLE_LOG_PATH=/tmp/ansible-prereq.log ansible-playbook -vvv \
            -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
            playbooks/prerequisites.yml
 
 2. Run ansible using the `openshift-node/network_manager.yml` playbook to
    ensure networking and NetworkManager are configured correctly:
 
-       cd /usr/share/ansible/openshift-ansible
-       # (or wherever you cloned the git repo if using git)
-       ANSIBLE_LOG_PATH=/tmp/ansible-network.log ansible-playbook -vvv \
+        cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        ANSIBLE_LOG_PATH=/tmp/ansible-network.log ansible-playbook -vvv \
            -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
            playbooks/openshift-node/network_manager.yml
 
 3. Run ansible using the `deploy_cluster.yml` playbook to install OpenShift and
    the logging components:
 
-       cd /usr/share/ansible/openshift-ansible
-       # (or wherever you cloned the git repo if using git)
-       ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
+        cd /usr/share/ansible/openshift-ansible
+        # (or wherever you cloned the git repo if using git)
+        ANSIBLE_LOG_PATH=/tmp/ansible.log ansible-playbook -vvv \
            -e @/path/to/vars.yaml -i /path/to/ansible-inventory \
            playbooks/deploy_cluster.yml
 
@@ -331,14 +337,14 @@ Edit the Elasticsearch service definition to add an external IP using the opensh
 
 1. Run the following command from OpenShift Aggregated Logging machine:
 
-       # oc edit svc logging-es
+        # oc edit svc logging-es
 
 2. Look for the line with clusterIP and add two line beneath it so that the result looks like this:
 
-spec:
-  clusterIP: 172.xx.yy.zz
-  externalIPs:
-  -  <openshift_public_ip>
+        spec:
+          clusterIP: 172.xx.yy.zz
+          externalIPs:
+          -  <openshift_public_ip>
 
 3. Save the file and exit.  The changes will take effect immediately.
 
@@ -355,24 +361,22 @@ See:
 https://github.com/openshift/origin-aggregated-logging/tree/master/hack/kopf
 
 
-
 ### Post-Install Checking ###
 
 1. To confirm that Elasticsearch, Curator, Kibana, and Fluentd pods are running, run:
 
-       # oc project logging
-       # oc get pods
+        # oc project logging
+        # oc get pods
 
 2. To confirm that the Elasticsearch and Kibana services are running, run:
 
-       # oc project logging
-       # oc get svc
+        # oc project logging
+        # oc get svc
 
 3. To confirm that there are routes for Elasticsearch and Kibana, run:
 
-
-       # oc project logging
-       # oc get routes
+        # oc project logging
+        # oc get routes
 
 
 ### Test Elasticsearch ###
