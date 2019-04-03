@@ -70,8 +70,8 @@ RHEL configuration, see
 For RHEL, you must enable the Extras and the rhel-7-fast-datapath-rpms channels
 (for docker and ovs, among others).
 
-ViaQ on OKD requires these [Yum Repos](centos7-viaq.repo).
-You will need to install the following packages: docker, iptables-services.
+ViaQ on OKD requires an up-to-date Centos7 system with the following packages:
+docker, iptables-services.
 
     # yum install docker iptables-services
 
@@ -141,16 +141,16 @@ system.
 
 Next, install the following packages:
 
-    # yum install origin-sdn-ovs openshift-ansible \
-    openshift-ansible-playbooks openshift-ansible-roles
+    # yum install openshift-ansible openshift-ansible-playbooks \
+      openshift-ansible-roles
 
 *RHEL with OCP*
 
 Assuming the system has been registered with the SDN and configured with the
 correct channels:
 
-    # yum install atomic-openshift-sdn-ovs openshift-ansible \
-    openshift-ansible-playbooks openshift-ansible-roles
+    # yum install openshift-ansible openshift-ansible-playbooks
+    openshift-ansible-roles
 
 If the 3.11 version of the openshift-ansible packages are not available, or do
 not work with recent versions of ansible, you can use the git repo
@@ -192,7 +192,7 @@ It is a list (ansible/yaml list format) of OpenShift namespaces, to create in Op
 Only users who are members of those namespaces can view those logs.
 
 **NOTE POSSIBLE LOSS OF DATA** Data tagged with project.namespace.* WILL BE LOST if namespace does not exist,
-so make sure any such namespaces are specified in openshift_logging_mux_namespaces
+so make sure any such namespaces are specified in `openshift_logging_mux_namespaces`
 
 4. Run Ansible to verify whether the default value for `openshift_public_hostname` is correct, and if not update it.  
 
@@ -339,10 +339,14 @@ enable Elasticsearch to mount the directory:
         # oc rollout latest $( oc get -n openshift-logging dc -l component=es -o name )
         # oc rollout status -w $( oc get -n openshift-logging dc -l component=es -o name )
 
-Enabling External Fluentd Access
---------------------------------
+Enabling External Elasticsearch Access
+--------------------------------------
 
-Edit the Elasticsearch service definition to add an external IP using the openshift_public_ip from above.
+This allows you to send records to Elasticsearch from outside of the OpenShift
+cluster, using client cert auth, from logging clients such as Fluentd and Rsyslog.
+
+Edit the Elasticsearch service definition to add an external IP using the
+`openshift_public_ip` from above.
 
 1. Run the following command from OpenShift Aggregated Logging machine:
 
@@ -509,8 +513,3 @@ to login:
 
     # oc login --username=loguser --password=loguser
     # oc login --username=system:admin
-
-
-## Appendix 1 CentOS7 ViaQ yum repos
-
-[CentOS 7 ViaQ](centos7-viaq.repo)
